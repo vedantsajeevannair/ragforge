@@ -21,3 +21,12 @@ def test_unknown_extension_raises():
 
 def test_supported_extensions_lists_registered_types():
     assert ".txt" in supported_extensions()
+
+
+def test_html_loader_extracts_visible_text_and_title():
+    html = b"<html><head><title>Guide</title><style>p{}</style></head>" \
+        b"<body><p>Hello</p><script>evil()</script><p>World</p></body></html>"
+    doc = load_bytes(html, "page.html")
+    assert "Hello" in doc.text and "World" in doc.text
+    assert "evil" not in doc.text
+    assert doc.metadata["title"] == "Guide"
