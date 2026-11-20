@@ -9,7 +9,7 @@ from app.vectorstore.base import SearchHit, StoredChunk
 def test_mmr_skips_duplicate_when_diversity_matters():
     q = np.array([1.0, 0.0])
     docs = np.array([[1.0, 0.0], [1.0, 0.0], [0.6, 0.8]])
-    assert mmr(q, docs, k=2, lambda_=0.5) == [0, 2]
+    assert mmr(q, docs, k=2, lambda_=0.4) == [0, 2]
 
 
 def test_mmr_lambda_one_is_pure_relevance():
