@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from app import __version__
 from app.api import auth, documents, meta, query
@@ -41,6 +42,10 @@ def create_app(settings: Settings | None = None, in_memory: bool = False) -> Fas
     app.include_router(documents.router)
     app.include_router(query.router)
     app.include_router(meta.router)
+
+    @app.get("/", include_in_schema=False)
+    def root() -> RedirectResponse:
+        return RedirectResponse("/docs")
 
     @app.get("/health", tags=["meta"])
     def health() -> dict[str, str]:

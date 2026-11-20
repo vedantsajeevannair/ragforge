@@ -12,3 +12,8 @@ def test_responses_carry_request_id_and_timing(client):
 
 def test_request_id_generated_when_missing(client):
     assert len(client.get("/health").headers["x-request-id"]) == 12
+
+
+def test_root_redirects_to_api_docs(client):
+    resp = client.get("/", follow_redirects=False)
+    assert resp.status_code == 307 and resp.headers["location"] == "/docs"
