@@ -80,7 +80,13 @@ export function DocumentsPage() {
                   <td className="num">{d.chunk_count}</td>
                   <td className="num">{formatBytes(d.size_bytes)}</td>
                   <td>{formatDate(d.created_at)}</td>
-                  <td>
+                  <td className="row">
+                    <button type="button" className="btn ghost"
+                      aria-label={`Download ${d.filename}`}
+                      onClick={() => api.download(d.doc_id, d.filename)
+                        .catch((e: Error) => setError(e.message))}>
+                      Download
+                    </button>
                     <button type="button" className="btn danger"
                       aria-label={`Delete ${d.filename}`} onClick={() => remove(d)}>
                       Delete

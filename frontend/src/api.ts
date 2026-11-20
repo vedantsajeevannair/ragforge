@@ -75,6 +75,19 @@ export const api = {
   deleteDocument: (docId: string) =>
     request<void>(`/documents/${docId}`, { method: "DELETE" }),
   chunks: (docId: string) => request<Hit[]>(`/documents/${docId}/chunks`),
+  reindex: () =>
+    request<{ reindexed: number; skipped: string[] }>("/documents/reindex", { method: "POST" }),
+  download: async (docId: string, filename: string) => {
+    const token = tokenStore.get();
+    const resp = await fetch(`${BASE}/documents/${docId}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) throw new ApiError(resp.status, "original file not available");
+    const url = URL.createObjectURL(await resp.blob());
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+    a.click();
+    URL.revokeObjectURL(url);
+  },
   collections: () => request<Collection[]>("/collections"),
   ask: (query: string, opts: AskOptions) =>
     request<AskResult>("/ask", { method: "POST", body: JSON.stringify({ query, ...opts }) }),
