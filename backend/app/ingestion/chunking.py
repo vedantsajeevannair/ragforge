@@ -109,3 +109,48 @@ class RecursiveChunker(Chunker):
                 chunks.append(Chunk(text[s:e], document.doc_id, len(chunks), s, e,
                                     dict(document.metadata)))
         return chunks
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(])")
+
+
+def split_sentences(text: str) -> list[tuple[int, int]]:
+    """Return (start, end) spans of sentences in `text`."""
+    spans, pos = [], 0
+    for match in _SENTENCE_END.finditer(text):
+        spans.append((pos, match.start()))
+        pos = match.end()
+    if pos < len(text):
+        spans.append((pos, len(text)))
+    return [(s, e) for s, e in spans if text[s:e].strip()]
+
+
+class SentenceChunker(Chunker):
+    """Packs whole sentences into chunks, overlapping by `overlap_sentences`."""
+
+    name = "sentence"
+
+    def __init__(self, size: int = 800, overlap_sentences: int = 1) -> None:
+        if size <= 0:
+            raise ValueError("chunk size must be positive")
+        if overlap_sentences < 0:
+            raise ValueError("overlap_sentences must be >= 0")
+        self.size = size
+        self.overlap_sentences = overlap_sentences
+
+    def split(self, document: Document) -> list[Chunk]:
+        text = document.text
+        sentences = split_sentences(text)
+        chunks: list[Chunk] = []
+        i = 0
+        while i < len(sentences):
+            j = i
+            while j + 1 < len(sentences) and sentences[j + 1][1] - sentences[i][0] <= self.size:
+                j += 1
+            s, e = sentences[i][0], sentences[j][1]
+            chunks.append(Chunk(text[s:e], document.doc_id, len(chunks), s, e,
+                                dict(document.metadata)))
+            if j + 1 >= len(sentences):
+                break
+            i = max(j + 1 - self.overlap_sentences, i + 1)
+        return chunks
