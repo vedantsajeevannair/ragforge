@@ -136,3 +136,17 @@ def test_patch_validation_and_permissions(client, admin_headers, user_headers):
                         json={"title": "x"}).status_code == 403
     assert client.patch(f"/documents/{doc_id}", headers=admin_headers,
                         json={"collection": "bad name"}).status_code == 422
+
+
+def test_list_documents_filters_by_name(client, admin_headers):
+    _upload(client, admin_headers, name="annual_report.txt", data=b"numbers")
+    _upload(client, admin_headers, name="notes.txt", data=b"other")
+
+    def names(q):
+        return sorted(d["filename"] for d in
+                      client.get("/documents", params={"q": q}, headers=admin_headers).json())
+
+    assert names("report") == ["annual_report.txt"]
+    # "_" must match a literal underscore, not any single character as in raw LIKE.
+    assert names("_") == ["annual_report.txt"]
+    assert names("%") == []

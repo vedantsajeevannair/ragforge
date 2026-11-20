@@ -70,12 +70,13 @@ async def upload(
 
 @router.get("", response_model=list[DocumentOut])
 def list_documents(response: Response, collection: str | None = None,
+                   q: str | None = Query(None, max_length=100),
                    limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0),
                    user: UserRecord = Depends(current_user),
                    state: AppState = Depends(get_state)) -> list[DocumentOut]:
     viewer = None if user.role == "admin" else user.id
-    response.headers["X-Total-Count"] = str(state.documents.count(collection, viewer))
-    return [_out(r) for r in state.documents.list(collection, limit, offset, viewer)]
+    response.headers["X-Total-Count"] = str(state.documents.count(collection, viewer, q))
+    return [_out(r) for r in state.documents.list(collection, limit, offset, viewer, q)]
 
 
 def _visible(doc_id: str, user: UserRecord, state: AppState):
