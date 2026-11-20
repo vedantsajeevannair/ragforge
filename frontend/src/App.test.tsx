@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { App } from "./App";
 import { AuthProvider } from "./auth";
 
@@ -20,5 +20,6 @@ it("hides the admin tab for regular users", async () => {
   render(<AuthProvider><App /></AuthProvider>);
   expect(await screen.findByText("bob")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Admin" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Ask" })).toHaveAttribute("aria-current", "page");
+  const nav = within(screen.getByRole("navigation"));
+  expect(nav.getByRole("button", { name: "Ask" })).toHaveAttribute("aria-current", "page");
 });
