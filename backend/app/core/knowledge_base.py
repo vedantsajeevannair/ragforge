@@ -41,14 +41,16 @@ def chunk_header(metadata: dict) -> str:
 
 class KnowledgeBase:
     def __init__(self, embedder: Embedder, store: VectorStore,
-                 contextual_headers: bool = True) -> None:
+                 contextual_headers: bool = False) -> None:
         self.embedder = embedder
         self.store = store
         # Index each chunk together with its file/section header so short chunks keep
         # the topic they belong to ("Parameters" alone says little; "BM25 > Parameters"
-        # does). The stored text shown to users stays unchanged.
+        # does). The stored text shown to users stays unchanged. Off by default: on the
+        # sample benchmark it lowered BM25 hit@1 from 0.923 to 0.885 and did not help
+        # the other configurations (see docs/evaluation.md).
         self.contextual_headers = contextual_headers
-        self.bm25 = BM25Index()
+        self.bm25 = BM25Index(text_fn=self._index_text)
         self.bm25.add(store.all_chunks())
         self._lock = threading.RLock()
         self._retrievers = {

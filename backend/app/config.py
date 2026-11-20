@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 120
     top_k: int = 5
+    contextual_headers: bool = False
     embedding_provider: str = "hashing"
     embedding_dim: int = 512
     embedding_model: str = ""

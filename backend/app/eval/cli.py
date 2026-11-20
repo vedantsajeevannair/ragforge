@@ -29,8 +29,9 @@ CONFIGS = [
 ]
 
 
-def build_kb(corpus: Path, dim: int, chunk_size: int, overlap: int) -> KnowledgeBase:
-    kb = KnowledgeBase(HashingEmbedder(dim), InMemoryVectorStore(dim))
+def build_kb(corpus: Path, dim: int, chunk_size: int, overlap: int,
+             headers: bool = False) -> KnowledgeBase:
+    kb = KnowledgeBase(HashingEmbedder(dim), InMemoryVectorStore(dim), contextual_headers=headers)
     exts = set(supported_extensions())
     for path in sorted(corpus.rglob("*")):
         if path.is_file() and path.suffix.lower() in exts:
@@ -62,11 +63,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--chunk-size", type=int, default=400)
     parser.add_argument("--overlap", type=int, default=60)
     parser.add_argument("--json", type=Path, help="also write the full report as JSON")
+    parser.add_argument("--headers", action="store_true",
+                        help="index chunks with file/section headers prepended")
     parser.add_argument("--failures", action="store_true",
                         help="list questions the best config did not rank first")
     args = parser.parse_args(argv)
 
-    kb = build_kb(args.corpus, args.dim, args.chunk_size, args.overlap)
+    kb = build_kb(args.corpus, args.dim, args.chunk_size, args.overlap, args.headers)
     examples = load_dataset(args.dataset)
     rows, full = [], []
     for base in CONFIGS:

@@ -38,3 +38,10 @@ def test_bm25_rebuild_resets_stats():
     idx = _index()
     idx.rebuild([StoredChunk("x", "d", "single")])
     assert len(idx) == 1 and idx.avg_length == 1
+
+
+def test_bm25_text_fn_indexes_extra_context():
+    idx = BM25Index(text_fn=lambda c: f"{c.metadata.get('section', '')} {c.text}")
+    idx.add([StoredChunk("1", "d", "uses k1 and b", {"section": "BM25 parameters"}),
+             StoredChunk("2", "d", "unrelated words")])
+    assert idx.search("bm25", k=1)[0].chunk.chunk_id == "1"

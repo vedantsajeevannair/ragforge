@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from collections.abc import Callable
 
 from app.text.tokenize import terms
 from app.vectorstore.base import MetadataFilter, SearchHit, StoredChunk, matches
 
 
 class BM25Index:
-    def __init__(self, k1: float = 1.5, b: float = 0.75) -> None:
+    def __init__(self, k1: float = 1.5, b: float = 0.75,
+                 text_fn: Callable[[StoredChunk], str] | None = None) -> None:
         self.k1 = k1
         self.b = b
+        self.text_fn = text_fn or (lambda c: c.text)
         self._chunks: list[StoredChunk] = []
         self._tfs: list[Counter[str]] = []
         self._lengths: list[int] = []
@@ -27,14 +30,14 @@ class BM25Index:
 
     def add(self, chunks: list[StoredChunk]) -> None:
         for chunk in chunks:
-            tf = Counter(terms(chunk.text))
+            tf = Counter(terms(self.text_fn(chunk)))
             self._chunks.append(chunk)
             self._tfs.append(tf)
             self._lengths.append(sum(tf.values()))
             self._df.update(tf.keys())
 
     def rebuild(self, chunks: list[StoredChunk]) -> None:
-        self.__init__(self.k1, self.b)
+        self.__init__(self.k1, self.b, self.text_fn)
         self.add(chunks)
 
     def idf(self, term: str) -> float:
