@@ -66,13 +66,17 @@ export const api = {
     request<DocumentInfo[]>(
       collection ? `/documents?collection=${encodeURIComponent(collection)}` : "/documents",
     ),
-  upload: (file: File, collection: string, visibility: "shared" | "private" = "shared") => {
+  upload: async (file: File, collection: string,
+    visibility: "shared" | "private" = "shared"): Promise<DocumentInfo> => {
     const form = new FormData();
     form.append("file", file);
     form.append("collection", collection);
     form.append("visibility", visibility);
-    return request<DocumentInfo>("/documents", { method: "POST", body: form });
+    const resp = await request<DocumentInfo | { job_id: number }>("/documents",
+      { method: "POST", body: form });
+    return "job_id" in resp ? waitForJob<DocumentInfo>(resp.job_id) : resp;
   },
+  job: (id: number) => request<Job>(`/jobs/${id}`),
   updateDocument: (docId: string,
     changes: Partial<Pick<DocumentInfo, "collection" | "visibility" | "title">>) =>
     request<DocumentInfo>(`/documents/${docId}`, {
@@ -115,6 +119,27 @@ export const api = {
       body: JSON.stringify({ current_password, new_password }),
     }),
 };
+
+export interface Job {
+  id: number;
+  kind: string;
+  status: "queued" | "running" | "done" | "failed";
+  result: unknown;
+  error: string | null;
+}
+
+/** Poll a background job until it finishes, backing off up to 2 s between checks. */
+export async function waitForJob<T>(id: number, sleep = (ms: number) =>
+  new Promise((r) => setTimeout(r, ms))): Promise<T> {
+  let delay = 250;
+  for (;;) {
+    const job = await api.job(id);
+    if (job.status === "done") return job.result as T;
+    if (job.status === "failed") throw new ApiError(422, job.error ?? "indexing failed");
+    await sleep(delay);
+    delay = Math.min(delay * 2, 2000);
+  }
+}
 
 export type StreamEvent =
   | { event: "sources"; data: { hits: Hit[] } }
