@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AccountPage } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AskPage } from "./pages/AskPage";
@@ -54,11 +55,13 @@ export function App() {
         </div>
       </aside>
       <main>
+        <ErrorBoundary key={page}>
         {page === "ask" && <AskPage />}
         {page === "documents" && <DocumentsPage />}
         {page === "history" && <HistoryPage />}
         {page === "account" && <AccountPage />}
         {page === "admin" && <AdminPage />}
+        </ErrorBoundary>
       </main>
     </div>
   );
