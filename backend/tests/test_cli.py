@@ -17,3 +17,19 @@ def test_index_then_ask(tmp_path, monkeypatch, capsys):
         assert "hybrid-search.md" in out
     finally:
         get_settings.cache_clear()
+
+
+def test_backup_archives_data(tmp_path, monkeypatch, capsys):
+    import tarfile
+
+    monkeypatch.setenv("RAGFORGE_DATA_DIR", str(tmp_path / "data"))
+    get_settings.cache_clear()
+    try:
+        cli.main(["index", str(CORPUS)])
+        out = tmp_path / "b.tar.gz"
+        assert cli.main(["backup", "-o", str(out)]) == 0
+        with tarfile.open(out) as tar:
+            names = tar.getnames()
+        assert "ragforge.db" in names and "index/vectors.npy" in names
+    finally:
+        get_settings.cache_clear()

@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import argparse
+import tarfile
+from datetime import datetime
 from pathlib import Path
 
 from app.api.state import build_state
@@ -42,6 +44,21 @@ def cmd_ask(args, state) -> int:
     return 0
 
 
+def cmd_backup(args, state) -> int:
+    """Write the database, index and original files to one .tar.gz."""
+    data_dir = state.settings.data_dir
+    out = Path(args.output or f"ragforge-backup-{datetime.now():%Y%m%d-%H%M%S}.tar.gz")
+    with state.db.tx() as conn:  # hold the DB lock so the snapshot is consistent
+        conn.execute("PRAGMA wal_checkpoint(FULL)")
+        with tarfile.open(out, "w:gz") as tar:
+            for name in ("ragforge.db", "index", "files"):
+                path = data_dir / name
+                if path.exists():
+                    tar.add(path, arcname=name)
+    print(f"wrote {out} ({out.stat().st_size // 1024} KB)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ragforge")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -52,10 +69,13 @@ def main(argv: list[str] | None = None) -> int:
     p_ask.add_argument("question")
     p_ask.add_argument("--k", type=int, default=5)
     p_ask.add_argument("--mode", choices=["dense", "bm25", "hybrid"], default="hybrid")
+    p_backup = sub.add_parser("backup", help="archive the database, index and files")
+    p_backup.add_argument("--output", "-o")
     args = parser.parse_args(argv)
     state = build_state(get_settings())
     try:
-        return {"index": cmd_index, "ask": cmd_ask}[args.command](args, state)
+        commands = {"index": cmd_index, "ask": cmd_ask, "backup": cmd_backup}
+        return commands[args.command](args, state)
     finally:
         state.jobs.shutdown()
         state.db.close()
