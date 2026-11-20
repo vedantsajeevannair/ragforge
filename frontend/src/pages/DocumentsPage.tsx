@@ -105,8 +105,8 @@ export function DocumentsPage() {
                   <td>{d.collection}</td>
                   <td className="num">{d.chunk_count}</td>
                   <td className="num">{formatBytes(d.size_bytes)}</td>
-                  <td>{formatDate(d.created_at)}</td>
-                  <td className="row">
+                  <td className="nowrap">{formatDate(d.created_at)}</td>
+                  <td className="actions">
                     <button type="button" className="btn ghost"
                       aria-label={`Edit ${d.filename}`} onClick={() => setEditing(d)}>
                       Edit

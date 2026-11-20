@@ -17,7 +17,9 @@ export function formatMs(ms: number): string {
 export function formatDate(sqliteUtc: string): string {
   if (!sqliteUtc) return "";
   const d = new Date(sqliteUtc.replace(" ", "T") + "Z");
-  return Number.isNaN(d.getTime()) ? sqliteUtc : d.toLocaleString();
+  return Number.isNaN(d.getTime())
+    ? sqliteUtc
+    : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export type AnswerPart = { kind: "text"; text: string } | { kind: "cite"; n: number };
