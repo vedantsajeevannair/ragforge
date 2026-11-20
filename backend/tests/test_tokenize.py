@@ -10,7 +10,7 @@ def test_tokenize_lowercases_and_splits():
 @pytest.mark.parametrize(
     "word,expected",
     [("documents", "document"), ("queries", "query"), ("indexing", "index"),
-     ("ranked", "rank"), ("boxes", "boxes"), ("is", "is")],
+     ("ranked", "rank"), ("boxes", "box"), ("classes", "class"), ("is", "is")],
 )
 def test_stem(word, expected):
     assert stem(word) == expected
