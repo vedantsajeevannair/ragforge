@@ -110,6 +110,9 @@ export const api = {
     URL.revokeObjectURL(url);
   },
   collections: () => request<Collection[]>("/collections"),
+  deleteCollection: (name: string) =>
+    request<{ deleted: number }>(`/documents/collections/${encodeURIComponent(name)}`,
+      { method: "DELETE" }),
   ask: (query: string, opts: AskOptions) =>
     request<AskResult>("/ask", { method: "POST", body: JSON.stringify({ query, ...opts }) }),
   history: () => request<HistoryItem[]>("/history"),

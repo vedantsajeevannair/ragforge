@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { CollectionTable } from "../components/CollectionTable";
 import { UserTable } from "../components/UserTable";
 import { formatMs } from "../format";
 import type { Stats } from "../types";
@@ -68,6 +69,7 @@ export function AdminPage() {
         </button>
         {reindexMsg && <p className="muted" role="status">{reindexMsg}</p>}
       </div>
+      <CollectionTable />
       {user && <UserTable currentUserId={user.id} />}
     </section>
   );
