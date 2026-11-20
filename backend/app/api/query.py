@@ -96,14 +96,16 @@ def ask(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
 
 
 @router.get("/history", response_model=list[HistoryItem])
-def history(limit: int = 50, user: UserRecord = Depends(current_user),
+def history(limit: int = 50, before_id: int | None = None,
+            user: UserRecord = Depends(current_user),
             state: AppState = Depends(get_state)) -> list[HistoryItem]:
+    """Newest first; pass the last id you received as before_id to get the next page."""
     limit = max(1, min(limit, 200))
     return [
         HistoryItem(id=r.id, question=r.question, answer=r.answer, grounded=r.grounded,
                     mode=r.mode, citations=json.loads(r.citations_json), feedback=r.feedback,
                     created_at=r.created_at)
-        for r in state.queries.for_user(user.id, limit)
+        for r in state.queries.for_user(user.id, limit, before_id)
     ]
 
 

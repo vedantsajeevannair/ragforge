@@ -178,9 +178,12 @@ class QueryRepository:
             )
         return cur.lastrowid
 
-    def for_user(self, user_id: int, limit: int = 50) -> list[QueryRecord]:
-        rows = self.db.query("SELECT * FROM queries WHERE user_id = ? ORDER BY id DESC LIMIT ?",
-                             (user_id, limit))
+    def for_user(self, user_id: int, limit: int = 50,
+                 before_id: int | None = None) -> list[QueryRecord]:
+        rows = self.db.query(
+            "SELECT * FROM queries WHERE user_id = ? AND id < ? ORDER BY id DESC LIMIT ?",
+            (user_id, before_id if before_id is not None else 2**62, limit),
+        )
         return [QueryRecord(**{**dict(r), "grounded": bool(r["grounded"])}) for r in rows]
 
     def set_feedback(self, query_id: int, user_id: int, value: int) -> bool:

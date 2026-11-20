@@ -120,3 +120,12 @@ def test_search_reports_standalone_query_and_timing(client, loaded):
     resp = client.post("/search", headers=loaded, json=body).json()
     assert resp["standalone_query"] == "what about its uses? (reciprocal rank fusion)"
     assert resp["took_ms"] >= 0
+
+
+def test_history_pages_with_before_id(client, loaded):
+    for i in range(5):
+        client.post("/ask", headers=loaded, json={"query": f"question {i}"})
+    first = client.get("/history?limit=2", headers=loaded).json()
+    assert [h["question"] for h in first] == ["question 4", "question 3"]
+    nxt = client.get(f"/history?limit=2&before_id={first[-1]['id']}", headers=loaded).json()
+    assert [h["question"] for h in nxt] == ["question 2", "question 1"]
