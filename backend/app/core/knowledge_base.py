@@ -31,10 +31,23 @@ class SearchOptions:
     expand: bool = True
 
 
+def chunk_header(metadata: dict) -> str:
+    """Short context line: file stem plus heading path, e.g. 'bm25 > BM25 > Parameters'."""
+    source = str(metadata.get("source", ""))
+    stem = source.rsplit(".", 1)[0].replace("-", " ").replace("_", " ")
+    parts = [p for p in (stem, metadata.get("title"), metadata.get("section")) if p]
+    return " > ".join(dict.fromkeys(parts))
+
+
 class KnowledgeBase:
-    def __init__(self, embedder: Embedder, store: VectorStore) -> None:
+    def __init__(self, embedder: Embedder, store: VectorStore,
+                 contextual_headers: bool = True) -> None:
         self.embedder = embedder
         self.store = store
+        # Index each chunk together with its file/section header so short chunks keep
+        # the topic they belong to ("Parameters" alone says little; "BM25 > Parameters"
+        # does). The stored text shown to users stays unchanged.
+        self.contextual_headers = contextual_headers
         self.bm25 = BM25Index()
         self.bm25.add(store.all_chunks())
         self._lock = threading.RLock()
@@ -60,12 +73,18 @@ class KnowledgeBase:
         ]
         if not stored:
             return []
-        vectors = self.embedder.embed([s.text for s in stored])
+        vectors = self.embedder.embed([self._index_text(s) for s in stored])
         with self._lock:
             self.store.delete_document(doc.doc_id)
             self.store.add(stored, vectors)
             self.bm25.rebuild(self.store.all_chunks())
         return stored
+
+    def _index_text(self, chunk: StoredChunk) -> str:
+        if not self.contextual_headers:
+            return chunk.text
+        header = chunk_header(chunk.metadata)
+        return f"{header}\n{chunk.text}" if header else chunk.text
 
     def delete(self, doc_id: str) -> int:
         with self._lock:

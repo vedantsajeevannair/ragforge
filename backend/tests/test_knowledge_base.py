@@ -54,3 +54,12 @@ def test_empty_query_returns_nothing(kb):
 
 def test_stats(kb):
     assert kb.stats()["documents"] == 3
+
+
+from app.core.knowledge_base import chunk_header  # noqa: E402
+
+
+def test_chunk_header_combines_source_and_section():
+    assert chunk_header({"source": "dense-retrieval.md", "section": "Dense retrieval > Why"}) \
+        == "dense retrieval > Dense retrieval > Why"
+    assert chunk_header({}) == ""
