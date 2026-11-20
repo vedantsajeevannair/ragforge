@@ -89,7 +89,8 @@ Embeddings can likewise use any OpenAI-compatible `/embeddings` endpoint with
 
 ## Evaluation
 
-`samples/` holds a 9-document corpus about retrieval and 26 labelled questions.
+`samples/` holds a 9-document corpus about retrieval and 40 labelled questions, 14 of which are
+reworded so they share few words with the answer.
 
 ```bash
 cd backend && python -m app.eval.cli --corpus ../samples/corpus --dataset ../samples/eval.jsonl
@@ -99,18 +100,21 @@ Results with the offline hashing embedder, k = 3:
 
 | config | hit@1 | hit@3 | MRR | nDCG@3 |
 |---|---:|---:|---:|---:|
-| BM25 | 0.923 | 0.962 | 0.942 | 0.947 |
-| Dense (hashing) | 0.846 | 0.962 | 0.904 | 0.919 |
-| Hybrid (RRF) | 0.885 | 0.962 | 0.923 | 0.933 |
-| Hybrid + re-rank + query expansion | **0.962** | 0.962 | **0.962** | **0.962** |
-| Hybrid + re-rank + expansion + MMR | 0.846 | 0.923 | 0.885 | 0.895 |
+| BM25 | 0.925 | 0.975 | 0.950 | 0.957 |
+| Dense (hashing) | 0.750 | 0.900 | 0.825 | 0.845 |
+| Hybrid (RRF, dense weight 0.5) | 0.875 | 0.975 | 0.921 | 0.935 |
+| Hybrid + re-rank + query expansion | 0.925 | 0.950 | 0.933 | 0.938 |
+| Hybrid + re-rank + expansion + MMR | 0.750 | 0.825 | 0.787 | 0.797 |
 
-Extractive answers on the same set: grounding rate 1.00, citation precision 0.89, expected-phrase
-recall 0.86.
+Extractive answers on the same set: grounding rate 0.975, citation precision 0.850,
+expected-phrase recall 0.806.
 
-The corpus is small and on one topic, so these numbers show the relative effect of each stage
-rather than real-world accuracy. MMR lowers scores here because each question has a single relevant
-document; it helps when several near-duplicate chunks compete for the context window.
+What this shows, honestly: with the offline hashing embedder, BM25 alone is as good as the full
+pipeline on this corpus, because the dense ranker is weak on paraphrases. Hybrid search is
+built for a real embedding model (`RAGFORGE_EMBEDDING_PROVIDER=http`), where the dense side
+carries its weight. The corpus is small and on one topic, so use these numbers to compare
+changes, not to predict accuracy on your documents. See [docs/evaluation.md](docs/evaluation.md)
+for the experiments behind the defaults.
 
 ## API
 

@@ -1,10 +1,10 @@
 # Evaluation notes
 
-All numbers come from `python -m app.eval.cli` on `samples/` (9 documents, 26 questions, k = 3,
+All numbers come from `python -m app.eval.cli` on `samples/` (9 documents, 40 questions, k = 3,
 offline hashing embedder). The corpus is small and on a single topic, so treat the numbers as a
 way to compare pipeline changes, not as an estimate of accuracy on your own documents.
 
-## Pipeline comparison
+## Pipeline comparison (original 26 questions)
 
 | config | hit@1 | hit@3 | MRR | nDCG@3 |
 |---|---:|---:|---:|---:|
@@ -25,7 +25,38 @@ Observations:
   the relevant document never uses the word "semantic". A neural embedding model would be
   expected to close it; the hashing embedder cannot.
 
+## Harder questions
+
+14 questions were added that paraphrase the source ("exact product codes" for a passage about
+exact matches, "almost identical passages" for near-duplicates). On all 40:
+
+| config | hit@1 | hit@3 | MRR |
+|---|---:|---:|---:|
+| BM25 | 0.925 | 0.975 | 0.950 |
+| Dense (hashing) | 0.750 | 0.900 | 0.825 |
+| Hybrid, equal weights | 0.825 | 0.925 | 0.875 |
+| Hybrid, dense weight 0.5 | 0.875 | 0.975 | 0.921 |
+| Hybrid + re-rank + expansion | 0.925 | 0.950 | 0.933 |
+
+The hashing embedder only matches shared words and word pieces, so paraphrases hurt it most.
+
 ## Experiments
+
+### Dense weight in fusion
+
+Sweeping the dense weight in RRF (BM25 fixed at 1.0), plain hybrid:
+
+| dense weight | hit@1 | hit@3 | MRR |
+|---:|---:|---:|---:|
+| 1.0 | 0.825 | 0.925 | 0.875 |
+| 0.75 | 0.875 | 0.950 | 0.908 |
+| 0.5 | 0.875 | 0.975 | 0.921 |
+| 0.3 | 0.925 | 0.975 | 0.946 |
+
+The default is 0.5 for the hashing embedder rather than the best-scoring 0.3, to avoid tuning
+too closely to a 40-question set; it is 1.0 when a real embedding model is configured.
+Set `RAGFORGE_DENSE_WEIGHT` to override.
+
 
 ### Extractive answer filtering
 
