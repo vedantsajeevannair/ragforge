@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import Response
 
 from app.api.deps import current_user, get_state
 from app.api.schemas import DocumentOut, HitOut
@@ -94,3 +95,14 @@ def delete_document(doc_id: str, user: UserRecord = Depends(current_user),
     state.kb.delete(doc_id)
     state.documents.delete(doc_id)
     state.files.delete(doc_id)
+
+
+@router.get("/{doc_id}/download")
+def download(doc_id: str, _: UserRecord = Depends(current_user),
+             state: AppState = Depends(get_state)) -> Response:
+    rec = state.documents.get(doc_id)
+    data = state.files.load(doc_id) if rec else None
+    if rec is None or data is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "original file not available")
+    return Response(data, media_type="application/octet-stream",
+                    headers={"Content-Disposition": f'attachment; filename="{rec.filename}"'})

@@ -57,3 +57,26 @@ def test_owner_can_delete_own_document(client, user_headers):
 def test_upload_sanitises_filename(client, admin_headers):
     resp = _upload(client, admin_headers, name="../../secret notes.md")
     assert resp.json()["filename"] == "secret_notes.md"
+
+
+def test_download_original(tmp_path, admin_headers):
+    from fastapi.testclient import TestClient
+
+    from app.config import Settings
+    from app.main import create_app
+
+    settings = Settings(data_dir=tmp_path, jwt_secret="d" * 40, embedding_dim=64)
+    with TestClient(create_app(settings)) as c:
+        token = c.post("/auth/register", json={"username": "ann", "password": "password123"})
+        h = {"Authorization": f"Bearer {token.json()['access_token']}"}
+        doc_id = c.post("/documents", headers=h, files={"file": ("a.md", MD)}).json()["doc_id"]
+        resp = c.get(f"/documents/{doc_id}/download", headers=h)
+        assert resp.content == MD
+        assert 'filename="a.md"' in resp.headers["content-disposition"]
+        c.delete(f"/documents/{doc_id}", headers=h)
+        assert not (tmp_path / "files" / doc_id).exists()
+
+
+def test_download_unavailable_in_memory(client, admin_headers):
+    doc_id = _upload(client, admin_headers).json()["doc_id"]
+    assert client.get(f"/documents/{doc_id}/download", headers=admin_headers).status_code == 404
