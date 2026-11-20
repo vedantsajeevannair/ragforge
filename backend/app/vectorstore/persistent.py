@@ -61,3 +61,9 @@ class PersistentVectorStore(InMemoryVectorStore):
         if removed:
             self.save()
         return removed
+
+    def update_metadata(self, doc_id, changes) -> int:
+        n = super().update_metadata(doc_id, changes)
+        if n:
+            self.save()
+        return n

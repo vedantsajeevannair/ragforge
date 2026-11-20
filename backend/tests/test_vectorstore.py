@@ -76,3 +76,13 @@ def test_persistent_store_rejects_dim_change(tmp_path):
     PersistentVectorStore(dim=2, directory=tmp_path).add([_chunk("a")], np.stack([_unit(1, 0)]))
     with pytest.raises(ValueError, match="re-index"):
         PersistentVectorStore(dim=3, directory=tmp_path)
+
+
+def test_update_metadata_in_memory_and_on_disk(tmp_path):
+    s = PersistentVectorStore(dim=2, directory=tmp_path)
+    s.add([_chunk("a", collection="old"), _chunk("b", doc="d2", collection="old")],
+          np.stack([_unit(1, 0), _unit(0, 1)]))
+    assert s.update_metadata("d1", {"collection": "new"}) == 1
+    reloaded = {c.chunk_id: c.metadata["collection"]
+                for c in PersistentVectorStore(2, tmp_path).all_chunks()}
+    assert reloaded == {"a": "new", "b": "old"}

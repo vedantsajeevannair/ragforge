@@ -58,3 +58,11 @@ class InMemoryVectorStore(VectorStore):
 
     def all_chunks(self) -> list[StoredChunk]:
         return list(self._chunks)
+
+    def update_metadata(self, doc_id, changes) -> int:
+        n = 0
+        for chunk in self._chunks:
+            if chunk.doc_id == doc_id:
+                chunk.metadata.update(changes)
+                n += 1
+        return n

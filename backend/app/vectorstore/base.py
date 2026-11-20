@@ -63,5 +63,14 @@ class VectorStore(ABC):
     @abstractmethod
     def all_chunks(self) -> list[StoredChunk]: ...
 
+    def update_metadata(self, doc_id: str, changes: dict[str, Any]) -> int:
+        """Merge `changes` into the metadata of every chunk of a document."""
+        n = 0
+        for chunk in self.all_chunks():
+            if chunk.doc_id == doc_id:
+                chunk.metadata.update(changes)
+                n += 1
+        return n
+
     def __len__(self) -> int:
         return len(self.all_chunks())
