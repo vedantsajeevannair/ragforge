@@ -76,12 +76,30 @@ def load_html(data: bytes, source: str) -> Document:
     return Document(text="".join(parser.parts), source=source, metadata=metadata)
 
 
+def load_pdf(data: bytes, source: str) -> Document:
+    from pypdf import PdfReader
+
+    reader = PdfReader(io.BytesIO(data))
+    pages = [page.extract_text() or "" for page in reader.pages]
+    text = "\n\n".join(pages)
+    offsets, pos = [], 0
+    for page in pages:
+        offsets.append(pos)
+        pos += len(page) + 2
+    metadata = {"type": "pdf", "pages": len(pages), "page_offsets": offsets}
+    info = reader.metadata
+    if info and info.title:
+        metadata["title"] = str(info.title)
+    return Document(text=text, source=source, metadata=metadata)
+
+
 _LOADERS: dict[str, Loader] = {
     ".txt": load_text,
     ".md": load_markdown,
     ".markdown": load_markdown,
     ".html": load_html,
     ".htm": load_html,
+    ".pdf": load_pdf,
 }
 
 
