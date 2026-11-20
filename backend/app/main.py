@@ -13,10 +13,12 @@ from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.api.state import build_state
 from app.config import Settings, get_settings
+from app.logging_config import configure_logging
 
 
 def create_app(settings: Settings | None = None, in_memory: bool = False) -> FastAPI:
     settings = settings or get_settings()
+    configure_logging(settings.log_level, settings.json_logs)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):

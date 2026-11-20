@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     jwt_expiry_minutes: int = 60 * 12
     max_upload_mb: int = 20
     ask_rate_per_minute: int = 30
+    log_level: str = "INFO"
+    json_logs: bool = False
     cors_origins: list[str] = ["http://localhost:5173"]
 
     @field_validator("data_dir")
