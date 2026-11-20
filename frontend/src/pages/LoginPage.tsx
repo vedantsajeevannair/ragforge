@@ -2,6 +2,16 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../auth";
 
+export function passwordHint(password: string): string | null {
+  if (!password) return null;
+  if (password.length < 8) return `${8 - password.length} more characters needed`;
+  const kinds = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((re) => re.test(password));
+  if (password.length < 12 && kinds.length < 3) {
+    return "Acceptable. Longer, or mixing letters, digits and symbols, is stronger.";
+  }
+  return "Strong password";
+}
+
 export function LoginPage() {
   const { login } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -36,8 +46,12 @@ export function LoginPage() {
           Password
           <input type="password" value={password}
             autoComplete={mode === "login" ? "current-password" : "new-password"}
-            onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+            onChange={(e) => setPassword(e.target.value)} required minLength={8}
+            aria-describedby={mode === "register" ? "password-hint" : undefined} />
         </label>
+        {mode === "register" && passwordHint(password) && (
+          <p id="password-hint" className="muted">{passwordHint(password)}</p>
+        )}
         {error && <p className="error" role="alert">{error}</p>}
         <button className="btn" type="submit" disabled={busy}>
           {mode === "login" ? "Sign in" : "Create account"}

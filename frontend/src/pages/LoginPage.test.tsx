@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthProvider } from "../auth";
-import { LoginPage } from "./LoginPage";
+import { LoginPage, passwordHint } from "./LoginPage";
 
 function mockFetch(responses: Array<{ status: number; body: unknown }>) {
   const fn = vi.fn();
@@ -43,4 +43,13 @@ it("stores the token after registering", async () => {
   await userEvent.click(screen.getByRole("button", { name: "Create account" }));
   await vi.waitFor(() => expect(localStorage.getItem("ragforge.token")).toBe("tok"));
   expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/register");
+});
+
+
+it("rates password strength", () => {
+  expect(passwordHint("")).toBeNull();
+  expect(passwordHint("abc")).toBe("5 more characters needed");
+  expect(passwordHint("abcdefgh")).toMatch(/^Acceptable/);
+  expect(passwordHint("Abcdef12!x")).toBe("Strong password");
+  expect(passwordHint("a much longer passphrase")).toBe("Strong password");
 });
