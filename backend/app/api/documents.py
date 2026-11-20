@@ -13,6 +13,7 @@ from app.core.files import safe_filename
 from app.db.repositories import DocumentRecord, UserRecord
 from app.ingestion.loaders import UnsupportedFileType, supported_extensions
 from app.ingestion.pipeline import ingest_bytes
+from app.ingestion.sniff import ContentMismatch, check_content
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -38,8 +39,11 @@ async def upload(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "file is empty")
     filename = safe_filename(file.filename or "upload.txt")
     try:
+        check_content(data, filename)
         result = ingest_bytes(data, filename, state.settings.chunk_size,
                               state.settings.chunk_overlap, strategy)
+    except ContentMismatch as exc:
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, str(exc)) from exc
     except UnsupportedFileType as exc:
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                             f"{exc}. Supported: {', '.join(supported_extensions())}") from exc

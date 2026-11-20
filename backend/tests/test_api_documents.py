@@ -110,3 +110,9 @@ def test_list_documents_paginates(client, admin_headers):
     assert page.headers["x-total-count"] == "5"
     assert len(page.json()) == 2
     assert client.get("/documents?limit=0", headers=admin_headers).status_code == 422
+
+
+def test_upload_rejects_renamed_binary(client, admin_headers):
+    resp = _upload(client, admin_headers, name="report.pdf", data=b"MZ\x90\x00not a pdf")
+    assert resp.status_code == 415
+    assert "not a valid .pdf" in resp.json()["detail"]
