@@ -31,10 +31,22 @@ export function HistoryPage({ onAskAgain }: { onAskAgain?: (question: string) =>
   const [items, setItems] = useState<HistoryItem[] | null>(null);
   const [open, setOpen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [more, setMore] = useState(false);
+  const PAGE = 20;
 
   useEffect(() => {
-    api.history().then(setItems).catch((e: Error) => setError(e.message));
+    api.history(undefined, PAGE).then((page) => {
+      setItems(page);
+      setMore(page.length === PAGE);
+    }).catch((e: Error) => setError(e.message));
   }, []);
+
+  async function loadMore() {
+    if (!items?.length) return;
+    const page = await api.history(items[items.length - 1].id, PAGE);
+    setItems([...items, ...page]);
+    setMore(page.length === PAGE);
+  }
 
   if (error) return <p className="error" role="alert">{error}</p>;
   if (items === null) return <p className="muted">Loading…</p>;
@@ -75,6 +87,9 @@ export function HistoryPage({ onAskAgain }: { onAskAgain?: (question: string) =>
           )}
         </div>
       ))}
+      {more && (
+        <button type="button" className="btn ghost" onClick={loadMore}>Load older questions</button>
+      )}
     </section>
   );
 }

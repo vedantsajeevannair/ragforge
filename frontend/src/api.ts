@@ -115,7 +115,8 @@ export const api = {
       { method: "DELETE" }),
   ask: (query: string, opts: AskOptions) =>
     request<AskResult>("/ask", { method: "POST", body: JSON.stringify({ query, ...opts }) }),
-  history: () => request<HistoryItem[]>("/history"),
+  history: (beforeId?: number, limit = 20) =>
+    request<HistoryItem[]>(`/history?limit=${limit}` + (beforeId ? `&before_id=${beforeId}` : "")),
   feedback: (id: number, value: 1 | -1) =>
     request<void>(`/history/${id}/feedback`, {
       method: "POST",
