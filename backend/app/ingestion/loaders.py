@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import csv
 import io
+import json
+import zipfile
+from xml.etree import ElementTree
 from collections.abc import Callable
 from html.parser import HTMLParser
 from pathlib import Path
@@ -93,6 +97,38 @@ def load_pdf(data: bytes, source: str) -> Document:
     return Document(text=text, source=source, metadata=metadata)
 
 
+_W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+
+def load_docx(data: bytes, source: str) -> Document:
+    """Read paragraph text from a .docx without extra dependencies.
+
+    Heading styles become Markdown-style '#' lines so the Markdown chunker can
+    attach section paths.
+    """
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            xml = zf.read("word/document.xml")
+    except (zipfile.BadZipFile, KeyError) as exc:
+        raise ValueError("not a valid .docx file") from exc
+    root = ElementTree.fromstring(xml)
+    lines = []
+    for para in root.iter(f"{_W}p"):
+        text = "".join(t.text or "" for t in para.iter(f"{_W}t")).strip()
+        if not text:
+            continue
+        style = para.find(f"{_W}pPr/{_W}pStyle")
+        level = 0
+        if style is not None:
+            name = style.get(f"{_W}val", "")
+            if name.lower().startswith("heading") and name[-1:].isdigit():
+                level = int(name[-1])
+            elif name.lower() == "title":
+                level = 1
+        lines.append(f"{'#' * level} {text}" if level else text)
+    return Document(text="\n\n".join(lines), source=source, metadata={"type": "markdown"})
+
+
 _LOADERS: dict[str, Loader] = {
     ".txt": load_text,
     ".md": load_markdown,
@@ -100,6 +136,7 @@ _LOADERS: dict[str, Loader] = {
     ".html": load_html,
     ".htm": load_html,
     ".pdf": load_pdf,
+    ".docx": load_docx,
 }
 
 

@@ -38,3 +38,15 @@ def test_pdf_loader_reads_pages(fixtures_dir):
     assert "vector search" in doc.text
     assert "BM25" in doc.text
     assert doc.metadata["page_offsets"][0] == 0
+
+
+def test_docx_loader_maps_headings(fixtures_dir):
+    doc = load_bytes((fixtures_dir / "policy.docx").read_bytes(), "policy.docx")
+    assert doc.text.splitlines()[0] == "# Leave Policy"
+    assert "## Carry over" in doc.text
+    assert "24 days" in doc.text
+
+
+def test_docx_loader_rejects_non_zip():
+    with pytest.raises(ValueError, match="docx"):
+        load_bytes(b"not a zip", "x.docx")
