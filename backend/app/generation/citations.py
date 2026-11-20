@@ -29,7 +29,8 @@ def cited_numbers(answer: str) -> list[int]:
     return seen
 
 
-def resolve_citations(answer: str, hits: list[SearchHit], snippet_chars: int = 240) -> list[Citation]:
+def resolve_citations(answer: str, hits: list[SearchHit],
+                      snippet_chars: int = 240) -> list[Citation]:
     """Map markers to hits; markers that point past the context are ignored."""
     out = []
     for n in cited_numbers(answer):

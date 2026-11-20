@@ -83,7 +83,8 @@ def test_cached_embedder_counts_hits_and_matches_inner():
 
 def test_cached_embedder_evicts_oldest():
     cached = CachedEmbedder(HashingEmbedder(dim=16), max_items=2)
-    cached.embed(["one"]); cached.embed(["two"]); cached.embed(["three"])
+    for word in ("one", "two", "three"):
+        cached.embed([word])
     assert "one" not in cached._cache
 
 

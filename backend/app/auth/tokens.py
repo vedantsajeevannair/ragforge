@@ -22,7 +22,8 @@ def create_token(user_id: int, role: str, secret: str, expiry_minutes: int) -> s
 
 def decode_token(token: str, secret: str) -> dict:
     try:
-        return jwt.decode(token, secret, algorithms=[ALGORITHM], options={"require": ["exp", "sub"]})
+        return jwt.decode(token, secret, algorithms=[ALGORITHM],
+                          options={"require": ["exp", "sub"]})
     except jwt.ExpiredSignatureError as exc:
         raise TokenError("token expired") from exc
     except jwt.InvalidTokenError as exc:

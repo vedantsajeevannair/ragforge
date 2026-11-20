@@ -28,3 +28,5 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+# FastAPI dependencies are declared as Depends()/File() defaults by design.
+ignore = ["B008"]
