@@ -192,3 +192,21 @@ def update_document(doc_id: str, body: DocumentUpdate,
     if chunk_changes:
         state.kb.store.update_metadata(doc_id, chunk_changes)
     return _out(state.documents.get(doc_id))
+
+
+class CollectionDeleteResult(BaseModel):
+    deleted: int
+
+
+@router.delete("/collections/{name}", response_model=CollectionDeleteResult, tags=["admin"])
+def delete_collection(name: str, _: UserRecord = Depends(require_admin),
+                      state: AppState = Depends(get_state)) -> CollectionDeleteResult:
+    """Delete every document in a collection, with its chunks and original files."""
+    docs = state.documents.list(collection=name)
+    if not docs:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "collection not found")
+    for rec in docs:
+        state.kb.delete(rec.doc_id)
+        state.documents.delete(rec.doc_id)
+        state.files.delete(rec.doc_id)
+    return CollectionDeleteResult(deleted=len(docs))

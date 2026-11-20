@@ -150,3 +150,16 @@ def test_list_documents_filters_by_name(client, admin_headers):
     # "_" must match a literal underscore, not any single character as in raw LIKE.
     assert names("_") == ["annual_report.txt"]
     assert names("%") == []
+
+
+def test_admin_deletes_whole_collection(client, admin_headers, user_headers):
+    _upload(client, admin_headers, name="a.txt", data=b"apples", collection="fruit")
+    _upload(client, admin_headers, name="b.txt", data=b"bananas", collection="fruit")
+    _upload(client, admin_headers, name="c.txt", data=b"carrots", collection="veg")
+    assert client.delete("/documents/collections/fruit", headers=user_headers).status_code == 403
+    resp = client.delete("/documents/collections/fruit", headers=admin_headers)
+    assert resp.json() == {"deleted": 2}
+    assert [c["name"] for c in client.get("/collections", headers=admin_headers).json()] == ["veg"]
+    hits = client.post("/search", headers=admin_headers, json={"query": "apples bananas"})
+    assert hits.json()["hits"] == []
+    assert client.delete("/documents/collections/fruit", headers=admin_headers).status_code == 404
