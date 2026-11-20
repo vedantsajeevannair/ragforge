@@ -10,6 +10,7 @@ export function DocumentsPage() {
   const toast = useToast();
   const [docs, setDocs] = useState<DocumentInfo[]>([]);
   const [filter, setFilter] = useState("");
+  const [collection, setCollection] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ doc: DocumentInfo; chunks: Hit[] } | null>(null);
@@ -47,7 +48,9 @@ export function DocumentsPage() {
     setPreview({ doc, chunks: await api.chunks(doc.doc_id) });
   }
 
+  const collections = [...new Set(docs.map((d) => d.collection))].sort();
   const shown = docs.filter((d) =>
+    (!collection || d.collection === collection) &&
     `${d.filename} ${d.collection} ${d.title ?? ""}`.toLowerCase().includes(filter.toLowerCase()),
   );
 
@@ -69,8 +72,15 @@ export function DocumentsPage() {
       )}
       <div className="panel">
         <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-          <input type="text" placeholder="Filter documents" aria-label="Filter documents"
-            value={filter} onChange={(e) => setFilter(e.target.value)} />
+          <div className="row">
+            <input type="text" placeholder="Filter documents" aria-label="Filter documents"
+              value={filter} onChange={(e) => setFilter(e.target.value)} />
+            <select aria-label="Collection filter" value={collection}
+              onChange={(e) => setCollection(e.target.value)}>
+              <option value="">All collections</option>
+              {collections.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
           <span className="muted">{shown.length} of {docs.length}</span>
         </div>
         {loading ? <p className="muted">Loading…</p> : shown.length === 0 ? (

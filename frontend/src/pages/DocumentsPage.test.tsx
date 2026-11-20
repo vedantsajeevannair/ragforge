@@ -30,6 +30,9 @@ it("lists, filters and deletes documents", async () => {
   expect(screen.getByText("2.0 KB")).toBeInTheDocument();
   expect(screen.getByText("private")).toBeInTheDocument();
 
+  await userEvent.selectOptions(screen.getByLabelText("Collection filter"), "ir");
+  expect(screen.queryByText("bread.txt")).not.toBeInTheDocument();
+  await userEvent.selectOptions(screen.getByLabelText("Collection filter"), "");
   await userEvent.type(screen.getByLabelText("Filter documents"), "food");
   expect(screen.queryByText("guide.md")).not.toBeInTheDocument();
   expect(screen.getByText("1 of 2")).toBeInTheDocument();
