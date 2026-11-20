@@ -12,18 +12,25 @@ switched to Claude, any OpenAI-compatible API, or a local Ollama model with one 
 
 ## Features
 
-- **Ingestion**: PDF (with page numbers), Markdown (heading-aware), HTML and text loaders;
-  fixed, recursive, sentence and Markdown chunkers with overlap.
+- **Ingestion**: PDF (with page numbers), Word, Markdown (heading-aware), HTML, CSV, JSON and
+  text loaders; fixed, recursive, sentence and Markdown chunkers with overlap; repeated
+  boilerplate removed; file contents checked against the extension.
 - **Hybrid retrieval**: BM25 and dense vector search merged with reciprocal rank fusion,
   then a term-coverage re-ranker and optional MMR diversification.
 - **Cited answers**: numbered context, `[n]` citations resolved to source snippets,
-  invalid citations removed, and an abstain path when nothing relevant is found.
+  invalid citations removed, a confidence score, and an abstain path when nothing relevant
+  is found. Follow-up questions use earlier ones for context.
 - **Streaming**: answers stream token by token over server-sent events.
 - **Evaluation harness**: recall@k, MRR, nDCG, grounding rate and citation precision on a
   labelled question set, run in CI as a regression guard.
-- **Multi-user API**: JWT auth with admin and user roles, collections, per-user history,
-  answer feedback and per-user rate limiting.
-- **React UI**: ask page, document manager with drag-and-drop upload, history and admin stats.
+- **Multi-user API**: JWT auth with admin and user roles, private or shared documents,
+  collections, per-user history, answer feedback, per-user rate limiting and background
+  indexing for large files.
+- **Operations**: Prometheus `/metrics`, `/ready` checks, JSON logs, re-indexing after
+  settings changes, Docker Compose.
+- **React UI**: streaming chat with citations and highlighted passages, document manager with
+  drag-and-drop upload, history with CSV export, admin page for users and collections,
+  dark mode.
 
 <p>
   <img src="docs/screenshots/documents.jpg" width="49%" alt="Document manager">
@@ -109,11 +116,11 @@ Results with the offline hashing embedder, k = 3:
 |---|---:|---:|---:|---:|
 | BM25 | 0.925 | 0.975 | 0.950 | 0.957 |
 | Dense (hashing) | 0.750 | 0.900 | 0.825 | 0.845 |
-| Hybrid (RRF, dense weight 0.5) | 0.875 | 0.975 | 0.921 | 0.935 |
+| Hybrid (RRF, dense weight 0.5) | 0.900 | 0.975 | 0.933 | 0.944 |
 | Hybrid + re-rank + query expansion | 0.925 | 0.950 | 0.933 | 0.938 |
 | Hybrid + re-rank + expansion + MMR | 0.750 | 0.825 | 0.787 | 0.797 |
 
-Extractive answers on the same set: grounding rate 0.975, citation precision 0.850,
+Extractive answers on the same set: grounding rate 0.975, citation precision 0.829,
 expected-phrase recall 0.806.
 
 What this shows, honestly: with the offline hashing embedder, BM25 alone is as good as the full
@@ -129,14 +136,21 @@ for the experiments behind the defaults.
 |---|---|---|
 | POST | `/auth/register`, `/auth/login` | Get a bearer token |
 | GET | `/auth/me` | Current user |
-| POST | `/documents` | Upload a file (`file`, `collection`) |
-| GET | `/documents`, `/documents/{id}`, `/documents/{id}/chunks` | Browse documents |
-| DELETE | `/documents/{id}` | Delete (owner or admin) |
+| POST | `/documents` | Upload a file (`file`, `collection`, `visibility`); 202 + job id if large |
+| GET | `/documents?q=&collection=&limit=&offset=` | List visible documents |
+| GET | `/documents/{id}`, `/documents/{id}/chunks`, `/documents/{id}/download` | One document |
+| PATCH / DELETE | `/documents/{id}` | Edit or delete (owner or admin) |
+| POST | `/documents/reindex` | Re-chunk everything with current settings (admin) |
+| DELETE | `/documents/collections/{name}` | Delete a collection (admin) |
+| GET | `/jobs/{id}` | Background indexing status |
 | POST | `/search` | Ranked passages |
 | POST | `/ask` | Answer with citations |
 | POST | `/ask/stream` | Same, as server-sent events |
 | GET | `/history` · POST `/history/{id}/feedback` | Past questions and ratings |
 | GET | `/collections`, `/config`, `/stats` | Metadata (stats is admin-only) |
+| GET / PATCH / DELETE | `/users`, `/users/{id}` | User management (admin) |
+| POST | `/auth/password` | Change your password |
+| GET | `/health`, `/ready`, `/metrics` | Liveness, readiness, Prometheus metrics |
 
 Full interactive docs at `/docs` when the server is running.
 
