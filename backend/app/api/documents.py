@@ -39,7 +39,7 @@ async def upload(
     limit = state.settings.max_upload_mb * 1024 * 1024
     data = await file.read(limit + 1)
     if len(data) > limit:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE,
                             f"file exceeds {state.settings.max_upload_mb} MB")
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "file is empty")
@@ -76,7 +76,7 @@ def _index_upload(state: AppState, user: UserRecord, data: bytes, filename: str,
     if not result.chunks:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "no extractable text found")
     if len(result.chunks) > state.settings.max_chunks_per_document:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+        raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE,
                             f"document produced {len(result.chunks)} chunks; the limit is "
                             f"{state.settings.max_chunks_per_document}. Split the file or "
                             "raise RAGFORGE_MAX_CHUNKS_PER_DOCUMENT.")
