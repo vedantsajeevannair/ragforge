@@ -125,3 +125,8 @@ mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: in
 .toast { background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 8px;
   font-size: 14px; box-shadow: 0 6px 20px rgb(0 0 0 / 0.15); max-width: 360px; }
 .toast.error { background: var(--danger); color: #fff; }
+
+.skip-link { position: absolute; left: -999px; top: 8px; background: var(--accent);
+  color: var(--accent-ink); padding: 8px 12px; border-radius: 8px; z-index: 20; }
+.skip-link:focus { left: 8px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

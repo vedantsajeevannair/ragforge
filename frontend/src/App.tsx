@@ -33,6 +33,7 @@ export function App() {
 
   return (
     <div className="app">
+      <a className="skip-link" href="#main">Skip to content</a>
       <aside className="sidebar">
         <h1>RAGForge</h1>
         <nav className="nav">
@@ -55,7 +56,7 @@ export function App() {
           </div>
         </div>
       </aside>
-      <main>
+      <main id="main" tabIndex={-1}>
         <ErrorBoundary key={page}>
         {page === "ask" && <AskPage key={prefill} initialQuestion={prefill} />}
         {page === "documents" && <DocumentsPage />}
