@@ -22,3 +22,9 @@ def test_cli_lists_failures(capsys):
     main(["--corpus", str(ROOT / "corpus"), "--dataset", str(ROOT / "eval.jsonl"),
           "--failures"])
     assert "missed rank 1" in capsys.readouterr().out
+
+
+def test_cli_sweep_prints_one_row_per_size(capsys):
+    main(["--corpus", str(ROOT / "corpus"), "--dataset", str(ROOT / "eval.jsonl"), "--sweep"])
+    out = capsys.readouterr().out
+    assert out.count("| size=") == 6

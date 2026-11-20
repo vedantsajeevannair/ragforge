@@ -54,6 +54,21 @@ def format_table(rows: list[tuple[str, dict[str, float]]], keys: list[str]) -> s
     return "\n".join(lines)
 
 
+SWEEP_SIZES = (200, 300, 400, 600, 800, 1200)
+
+
+def sweep(args) -> int:
+    examples = load_dataset(args.dataset)
+    rows = []
+    for size in SWEEP_SIZES:
+        overlap = min(args.overlap, size // 4)
+        kb = build_kb(args.corpus, args.dim, size, overlap, args.headers)
+        report = evaluate_retrieval(kb, examples, SearchOptions(k=args.k))
+        rows.append((f"size={size} chunks={kb.stats()['chunks']}", report.metrics))
+    print(format_table(rows, ["hit@1", "hit@k", "mrr", "ndcg@k"]))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--corpus", type=Path, required=True)
@@ -65,10 +80,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", type=Path, help="also write the full report as JSON")
     parser.add_argument("--headers", action="store_true",
                         help="index chunks with file/section headers prepended")
+    parser.add_argument("--sweep", action="store_true",
+                        help="compare chunk sizes for the hybrid+rerank+expand pipeline")
     parser.add_argument("--failures", action="store_true",
                         help="list questions the best config did not rank first")
     args = parser.parse_args(argv)
 
+    if args.sweep:
+        return sweep(args)
     kb = build_kb(args.corpus, args.dim, args.chunk_size, args.overlap, args.headers)
     examples = load_dataset(args.dataset)
     rows, full = [], []
