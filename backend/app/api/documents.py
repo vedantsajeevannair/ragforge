@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -60,9 +60,12 @@ async def upload(
 
 
 @router.get("", response_model=list[DocumentOut])
-def list_documents(collection: str | None = None, _: UserRecord = Depends(current_user),
+def list_documents(response: Response, collection: str | None = None,
+                   limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0),
+                   _: UserRecord = Depends(current_user),
                    state: AppState = Depends(get_state)) -> list[DocumentOut]:
-    return [_out(r) for r in state.documents.list(collection)]
+    response.headers["X-Total-Count"] = str(state.documents.count(collection))
+    return [_out(r) for r in state.documents.list(collection, limit, offset)]
 
 
 @router.get("/{doc_id}", response_model=DocumentOut)

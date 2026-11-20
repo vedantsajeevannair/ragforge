@@ -49,13 +49,20 @@ class DocumentRepository:
         rows = self.db.query("SELECT * FROM documents WHERE doc_id = ?", (doc_id,))
         return DocumentRecord(**dict(rows[0])) if rows else None
 
-    def list(self, collection: str | None = None) -> list[DocumentRecord]:
+    def list(self, collection: str | None = None, limit: int | None = None,
+             offset: int = 0) -> list[DocumentRecord]:
+        where, params = ("WHERE collection = ?", [collection]) if collection else ("", [])
+        sql = f"SELECT * FROM documents {where} ORDER BY created_at DESC, filename"
+        if limit is not None:
+            sql += " LIMIT ? OFFSET ?"
+            params += [limit, offset]
+        return [DocumentRecord(**dict(r)) for r in self.db.query(sql, tuple(params))]
+
+    def count(self, collection: str | None = None) -> int:
         if collection:
-            rows = self.db.query("SELECT * FROM documents WHERE collection = ? "
-                                 "ORDER BY created_at DESC, filename", (collection,))
-        else:
-            rows = self.db.query("SELECT * FROM documents ORDER BY created_at DESC, filename")
-        return [DocumentRecord(**dict(r)) for r in rows]
+            return self.db.query("SELECT COUNT(*) FROM documents WHERE collection = ?",
+                                 (collection,))[0][0]
+        return self.db.query("SELECT COUNT(*) FROM documents")[0][0]
 
     def delete(self, doc_id: str) -> bool:
         with self.db.tx() as conn:

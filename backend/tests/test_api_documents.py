@@ -101,3 +101,12 @@ def test_reindex_uses_new_chunk_size(tmp_path):
         after = c.get(f"/documents/{before['doc_id']}", headers=h).json()
         assert after["chunk_count"] > before["chunk_count"]
         assert c.post("/search", headers=h, json={"query": "retrieval"}).json()["hits"]
+
+
+def test_list_documents_paginates(client, admin_headers):
+    for i in range(5):
+        _upload(client, admin_headers, name=f"f{i}.txt", data=f"text number {i}".encode())
+    page = client.get("/documents?limit=2&offset=2", headers=admin_headers)
+    assert page.headers["x-total-count"] == "5"
+    assert len(page.json()) == 2
+    assert client.get("/documents?limit=0", headers=admin_headers).status_code == 422
