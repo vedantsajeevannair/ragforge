@@ -9,7 +9,8 @@ from __future__ import annotations
 import re
 
 from app.generation.citations import Citation
-from app.retrieval.rerank import term_coverage
+from app.retrieval.followup import content_terms
+from app.text.tokenize import stem, terms
 from app.vectorstore.base import SearchHit
 
 _SENTENCE = re.compile(r"[^.!?]+[.!?]*")
@@ -23,11 +24,19 @@ def cited_sentence_ratio(answer: str) -> float:
     return sum(1 for s in sentences if _MARKER.search(s)) / len(sentences)
 
 
+def content_coverage(question: str, text: str) -> float:
+    """Share of the question's content words (not 'how', 'does', ...) found in text."""
+    wanted = {stem(t) for t in content_terms(question)}
+    if not wanted:
+        return 0.0
+    return len(wanted & set(terms(text))) / len(wanted)
+
+
 def answer_confidence(question: str, answer: str, hits: list[SearchHit],
                       citations: list[Citation]) -> float:
     if not hits or not citations:
         return 0.0
-    coverage = max(term_coverage(question, h.chunk.text) for h in hits)
+    coverage = max(content_coverage(question, h.chunk.text) for h in hits)
     return round(0.6 * coverage + 0.4 * cited_sentence_ratio(answer), 3)
 
 

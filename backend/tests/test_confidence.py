@@ -20,3 +20,8 @@ def test_confidence_zero_without_citations():
     hits = [SearchHit(StoredChunk("c", "d", "x"), 1.0)]
     assert answer_confidence("q", "a", hits, []) == 0.0
     assert confidence_label(0.5) == "medium" and confidence_label(0.1) == "low"
+
+
+def test_content_coverage_ignores_question_words():
+    from app.generation.confidence import content_coverage
+    assert content_coverage("How does BM25 rank documents?", "BM25 ranks documents") == 1.0
