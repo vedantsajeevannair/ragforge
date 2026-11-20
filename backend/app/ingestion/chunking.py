@@ -111,13 +111,22 @@ class RecursiveChunker(Chunker):
         return chunks
 
 
-_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(])")
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Za-z0-9\"'(])")
+_ABBREVIATIONS = ("e.g.", "i.e.", "etc.", "vs.", "fig.", "approx.", "dr.", "mr.", "ms.",
+                  "no.", "p.", "pp.", "cf.")
 
 
 def split_sentences(text: str) -> list[tuple[int, int]]:
-    """Return (start, end) spans of sentences in `text`."""
+    """Return (start, end) spans of sentences in `text`.
+
+    A sentence may start with a lowercase word ("nDCG discounts...", "iPhone..."), so
+    lowercase starts are allowed; common abbreviations do not end a sentence.
+    """
     spans, pos = [], 0
     for match in _SENTENCE_END.finditer(text):
+        before = text[pos:match.start()].lower()
+        if before.endswith(_ABBREVIATIONS):
+            continue
         spans.append((pos, match.start()))
         pos = match.end()
     if pos < len(text):

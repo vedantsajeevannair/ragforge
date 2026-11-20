@@ -94,3 +94,10 @@ def test_get_chunker_by_name():
     assert isinstance(get_chunker("recursive", 100, 10), RecursiveChunker)
     with pytest.raises(ValueError):
         get_chunker("nope", 100, 10)
+
+
+def test_split_sentences_lowercase_starts_and_abbreviations():
+    text = "MRR rewards early hits. nDCG discounts later ones. Use tools, e.g. BM25 here."
+    parts = [text[s:e] for s, e in split_sentences(text)]
+    assert parts == ["MRR rewards early hits.", "nDCG discounts later ones.",
+                     "Use tools, e.g. BM25 here."]
