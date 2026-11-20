@@ -24,7 +24,7 @@ jobs:
           cache-dependency-path: backend/requirements-dev.txt
       - run: pip install -r requirements-dev.txt
       - run: ruff check app tests
-      - run: pytest -q
+      - run: pytest -q --cov --cov-report=term
       - name: Retrieval benchmark
         run: python -m app.eval.cli --corpus ../samples/corpus --dataset ../samples/eval.jsonl
 
