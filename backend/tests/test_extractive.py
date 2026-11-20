@@ -46,3 +46,9 @@ def test_extractive_drops_weak_filler_sentences():
                    "BM25 is a ranking function.")
     answer = ExtractiveProvider().complete("", user)
     assert answer == "Reciprocal rank fusion combines rankings by summing reciprocal ranks. [1]"
+
+
+def test_extractive_ignores_question_words():
+    user = _prompt("How does fusion work?",
+                   "Fusion merges rankings.", "This shows how relevant a document is.")
+    assert ExtractiveProvider().complete("", user) == "Fusion merges rankings. [1]"

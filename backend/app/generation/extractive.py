@@ -10,7 +10,8 @@ import re
 
 from app.generation.providers import LLMProvider
 from app.ingestion.chunking import split_sentences
-from app.text.tokenize import terms
+from app.retrieval.followup import content_terms
+from app.text.tokenize import stem, terms
 
 _HEADING_LINE = re.compile(r"^\s{0,3}#{1,6}\s+.*$", re.MULTILINE)
 _BLOCK = re.compile(r"^\[(\d+)\] Source: [^\n]*\n(.*?)(?=\n\n\[\d+\] Source: |\Z)",
@@ -42,7 +43,8 @@ class ExtractiveProvider(LLMProvider):
 
     def complete(self, system: str, user: str) -> str:
         blocks, question = _parse_prompt(user)
-        q_terms = set(terms(question))
+        # Question words ("how", "does") would otherwise reward any sentence containing them.
+        q_terms = {stem(t) for t in content_terms(question)}
         if not q_terms:
             return NOT_FOUND
         scored = []
