@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 
 from app.api.deps import current_user, get_state
 from app.api.ratelimit import TokenBucket
@@ -97,3 +98,37 @@ def feedback(query_id: int, body: FeedbackRequest, user: UserRecord = Depends(cu
              state: AppState = Depends(get_state)) -> None:
     if not state.queries.set_feedback(query_id, user.id, body.value):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "query not found")
+
+
+def _sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+@router.post("/ask/stream")
+def ask_stream(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
+               state: AppState = Depends(get_state)) -> StreamingResponse:
+    """Server-sent events: `sources`, then `token`s, then `done` (or `error`)."""
+
+    def events():
+        try:
+            for ev in state.engine.stream(body.query, _options(body)):
+                if ev["type"] == "sources":
+                    yield _sse("sources", {"hits": [_hit(h).model_dump() for h in ev["hits"]]})
+                elif ev["type"] == "token":
+                    yield _sse("token", {"text": ev["text"]})
+                else:
+                    citations = [CitationOut(**vars(c)) for c in ev["citations"]]
+                    timings = {k: round(v, 2) for k, v in ev["timings_ms"].items()}
+                    qid = state.queries.log(
+                        user.id, body.query, ev["answer"], ev["grounded"], body.mode,
+                        json.dumps([c.model_dump() for c in citations]),
+                        timings["retrieval"], timings["generation"],
+                    )
+                    yield _sse("done", {"query_id": qid, "answer": ev["answer"],
+                                        "grounded": ev["grounded"], "timings_ms": timings,
+                                        "citations": [c.model_dump() for c in citations]})
+        except LLMError as exc:
+            yield _sse("error", {"detail": str(exc)})
+
+    return StreamingResponse(events(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

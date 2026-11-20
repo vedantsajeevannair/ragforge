@@ -74,3 +74,22 @@ def test_history_and_feedback(client, loaded, user_headers):
     assert other.status_code == 404
     bad = client.post(f"/history/{qid}/feedback", headers=loaded, json={"value": 3})
     assert bad.status_code == 422
+
+
+def _parse_sse(text):
+    events = []
+    for block in text.strip().split("\n\n"):
+        lines = dict(line.split(": ", 1) for line in block.split("\n"))
+        import json
+        events.append((lines["event"], json.loads(lines["data"])))
+    return events
+
+
+def test_ask_stream_sends_sse_events(client, loaded):
+    resp = client.post("/ask/stream", headers=loaded, json={"query": "rank fusion merges"})
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/event-stream")
+    events = _parse_sse(resp.text)
+    assert events[0][0] == "sources"
+    assert events[-1][0] == "done" and events[-1][1]["grounded"]
+    assert client.get("/history", headers=loaded).json()[0]["id"] == events[-1][1]["query_id"]
