@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { api, tokenStore } from "./api";
+import { api, setUnauthorizedHandler, tokenStore } from "./api";
 import type { User } from "./types";
 
 interface AuthState {
@@ -17,6 +17,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // An expired or revoked token signs the user out instead of failing every request.
+    setUnauthorizedHandler(() => setUser(null));
     if (!tokenStore.get()) {
       setLoading(false);
       return;

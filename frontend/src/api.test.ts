@@ -44,3 +44,22 @@ describe("waitForJob", () => {
     await expect(waitForJob(1, async () => {})).rejects.toThrow("no text");
   });
 });
+
+describe("unauthorized handling", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  it("clears the token and notifies on 401", async () => {
+    const { api, setUnauthorizedHandler } = await import("./api");
+    localStorage.setItem("ragforge.token", "expired");
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ detail: "token expired" }), { status: 401 })));
+    await expect(api.documents()).rejects.toThrow("token expired");
+    expect(handler).toHaveBeenCalled();
+    expect(localStorage.getItem("ragforge.token")).toBeNull();
+  });
+});

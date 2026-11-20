@@ -23,6 +23,12 @@ export class ApiError extends Error {
   }
 }
 
+/** Called when the server rejects the token, so the app can sign the user out. */
+let onUnauthorized: () => void = () => {};
+export function setUnauthorizedHandler(fn: () => void) {
+  onUnauthorized = fn;
+}
+
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),
   set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
@@ -37,6 +43,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
   const resp = await fetch(`${BASE}${path}`, { ...init, headers });
+  if (resp.status === 401 && token && !path.startsWith("/auth/")) {
+    tokenStore.clear();
+    onUnauthorized();
+  }
   if (!resp.ok) {
     let detail = resp.statusText;
     try {
