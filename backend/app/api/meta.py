@@ -25,6 +25,12 @@ class StatsOut(BaseModel):
     chunks: int
     collections: int
     users: int
+    queries: int
+    grounded_rate: float
+    avg_retrieval_ms: float
+    avg_generation_ms: float
+    thumbs_up: int
+    thumbs_down: int
 
 
 class ConfigOut(BaseModel):
@@ -48,9 +54,14 @@ def collections(_: UserRecord = Depends(current_user),
 def stats(_: UserRecord = Depends(require_admin),
           state: AppState = Depends(get_state)) -> StatsOut:
     kb = state.kb.stats()
+    q = state.queries.summary()
     return StatsOut(documents=kb["documents"], chunks=kb["chunks"],
                     collections=len(state.documents.collections()),
-                    users=state.users.count())
+                    users=state.users.count(), queries=int(q["total"]),
+                    grounded_rate=round(float(q["grounded_rate"]), 3),
+                    avg_retrieval_ms=round(float(q["retrieval_ms"]), 2),
+                    avg_generation_ms=round(float(q["generation_ms"]), 2),
+                    thumbs_up=int(q["up"]), thumbs_down=int(q["down"]))
 
 
 @router.get("/config", response_model=ConfigOut)

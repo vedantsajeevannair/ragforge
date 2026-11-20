@@ -22,3 +22,9 @@ def test_config_lists_capabilities(client, admin_headers):
     assert ".pdf" in cfg["supported_extensions"]
     assert "recursive" in cfg["chunkers"]
     assert cfg["llm_provider"] == "extractive"
+
+
+def test_stats_include_query_metrics(client, admin_headers):
+    client.post("/ask", headers=admin_headers, json={"query": "nothing indexed"})
+    stats = client.get("/stats", headers=admin_headers).json()
+    assert stats["queries"] == 1 and stats["grounded_rate"] == 0.0
