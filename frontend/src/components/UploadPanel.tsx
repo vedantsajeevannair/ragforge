@@ -3,7 +3,7 @@ import type { DragEvent } from "react";
 import { api } from "../api";
 import type { DocumentInfo } from "../types";
 
-const ACCEPT = ".pdf,.md,.markdown,.txt,.html,.htm";
+const ACCEPT = ".pdf,.docx,.md,.markdown,.txt,.html,.htm,.csv,.tsv,.json";
 
 interface Props {
   onUploaded: (doc: DocumentInfo) => void;
@@ -48,7 +48,7 @@ export function UploadPanel({ onUploaded }: Props) {
       <div className={`dropzone${over ? " over" : ""}`}
         onDragOver={(e) => { e.preventDefault(); setOver(true); }}
         onDragLeave={() => setOver(false)} onDrop={onDrop}>
-        <p>{busy ? `Indexing ${busy}…` : "Drop PDF, Markdown, HTML or text files here"}</p>
+        <p>{busy ? `Indexing ${busy}…` : "Drop PDF, Word, Markdown, HTML, CSV, JSON or text files here"}</p>
         <label className="btn ghost">
           Choose files
           <input ref={inputRef} type="file" multiple accept={ACCEPT} hidden
