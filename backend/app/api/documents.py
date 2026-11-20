@@ -6,7 +6,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.access import can_view
 from app.api.deps import current_user, get_state, require_admin
@@ -147,3 +147,27 @@ def reindex(_: UserRecord = Depends(require_admin),
         state.documents.upsert(rec)
         done += 1
     return ReindexResult(reindexed=done, skipped=skipped)
+
+
+class DocumentUpdate(BaseModel):
+    collection: str | None = Field(None, min_length=1, max_length=60, pattern=r"^[\w.-]+$")
+    visibility: Literal["shared", "private"] | None = None
+    title: str | None = Field(None, max_length=200)
+
+
+@router.patch("/{doc_id}", response_model=DocumentOut)
+def update_document(doc_id: str, body: DocumentUpdate,
+                    user: UserRecord = Depends(current_user),
+                    state: AppState = Depends(get_state)) -> DocumentOut:
+    """Move a document to another collection, change visibility or rename it."""
+    rec = _visible(doc_id, user, state)
+    if user.role != "admin" and rec.owner_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "only the owner or an admin can edit")
+    changes = body.model_dump(exclude_none=True)
+    if not changes:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "nothing to update")
+    state.documents.update_fields(doc_id, **changes)
+    chunk_changes = {k: v for k, v in changes.items() if k in ("collection", "visibility")}
+    if chunk_changes:
+        state.kb.store.update_metadata(doc_id, chunk_changes)
+    return _out(state.documents.get(doc_id))

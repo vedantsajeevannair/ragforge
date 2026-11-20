@@ -116,3 +116,23 @@ def test_upload_rejects_renamed_binary(client, admin_headers):
     resp = _upload(client, admin_headers, name="report.pdf", data=b"MZ\x90\x00not a pdf")
     assert resp.status_code == 415
     assert "not a valid .pdf" in resp.json()["detail"]
+
+
+def test_patch_moves_collection_and_changes_visibility(client, admin_headers, user_headers):
+    doc_id = _upload(client, user_headers, collection="a").json()["doc_id"]
+    resp = client.patch(f"/documents/{doc_id}", headers=user_headers,
+                        json={"collection": "b", "visibility": "private", "title": "Guide"})
+    assert resp.status_code == 200
+    assert resp.json()["collection"] == "b" and resp.json()["title"] == "Guide"
+    hits = client.post("/search", headers=user_headers,
+                       json={"query": "hybrid search", "collection": "b"}).json()["hits"]
+    assert hits and all(h["metadata"]["visibility"] == "private" for h in hits)
+
+
+def test_patch_validation_and_permissions(client, admin_headers, user_headers):
+    doc_id = _upload(client, admin_headers).json()["doc_id"]
+    assert client.patch(f"/documents/{doc_id}", headers=admin_headers, json={}).status_code == 400
+    assert client.patch(f"/documents/{doc_id}", headers=user_headers,
+                        json={"title": "x"}).status_code == 403
+    assert client.patch(f"/documents/{doc_id}", headers=admin_headers,
+                        json={"collection": "bad name"}).status_code == 422

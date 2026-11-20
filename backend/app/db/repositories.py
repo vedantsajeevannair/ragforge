@@ -79,6 +79,15 @@ class DocumentRepository:
         with self.db.tx() as conn:
             return conn.execute("DELETE FROM documents WHERE doc_id = ?", (doc_id,)).rowcount > 0
 
+    def update_fields(self, doc_id: str, **fields) -> bool:
+        allowed = {"collection", "visibility", "title"}
+        if not fields or set(fields) - allowed:
+            raise ValueError(f"can only update {sorted(allowed)}")
+        sets = ", ".join(f"{k} = ?" for k in fields)
+        with self.db.tx() as conn:
+            return conn.execute(f"UPDATE documents SET {sets} WHERE doc_id = ?",
+                                (*fields.values(), doc_id)).rowcount > 0
+
     def collections(self) -> list[tuple[str, int]]:
         rows = self.db.query("SELECT collection, COUNT(*) AS n FROM documents "
                              "GROUP BY collection ORDER BY collection")
