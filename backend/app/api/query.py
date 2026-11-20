@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.deps import current_user, get_state
 from app.api.ratelimit import TokenBucket
-from app.api.schemas import AskResponse, CitationOut, HitOut, SearchRequest, SearchResponse
+from app.api.schemas import (
+    AskResponse,
+    CitationOut,
+    FeedbackRequest,
+    HitOut,
+    HistoryItem,
+    SearchRequest,
+    SearchResponse,
+)
 from app.api.state import AppState
 from app.core.knowledge_base import SearchOptions
 from app.db.repositories import UserRecord
@@ -47,17 +57,43 @@ def _ask_limit(request: Request, user: UserRecord = Depends(current_user),
 
 
 @router.post("/ask", response_model=AskResponse)
-def ask(body: SearchRequest, _: UserRecord = Depends(_ask_limit),
+def ask(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
         state: AppState = Depends(get_state)) -> AskResponse:
     try:
         ans = state.engine.answer(body.query, _options(body))
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
+    citations = [CitationOut(**vars(c)) for c in ans.citations]
+    query_id = state.queries.log(
+        user.id, ans.question, ans.answer, ans.grounded, body.mode,
+        json.dumps([c.model_dump() for c in citations]),
+        ans.timings_ms.get("retrieval", 0.0), ans.timings_ms.get("generation", 0.0),
+    )
     return AskResponse(
+        query_id=query_id,
         question=ans.question,
         answer=ans.answer,
         grounded=ans.grounded,
-        citations=[CitationOut(**vars(c)) for c in ans.citations],
+        citations=citations,
         hits=[_hit(h) for h in ans.hits],
         timings_ms={k: round(v, 2) for k, v in ans.timings_ms.items()},
     )
+
+
+@router.get("/history", response_model=list[HistoryItem])
+def history(limit: int = 50, user: UserRecord = Depends(current_user),
+            state: AppState = Depends(get_state)) -> list[HistoryItem]:
+    limit = max(1, min(limit, 200))
+    return [
+        HistoryItem(id=r.id, question=r.question, answer=r.answer, grounded=r.grounded,
+                    mode=r.mode, citations=json.loads(r.citations_json), feedback=r.feedback,
+                    created_at=r.created_at)
+        for r in state.queries.for_user(user.id, limit)
+    ]
+
+
+@router.post("/history/{query_id}/feedback", status_code=status.HTTP_204_NO_CONTENT)
+def feedback(query_id: int, body: FeedbackRequest, user: UserRecord = Depends(current_user),
+             state: AppState = Depends(get_state)) -> None:
+    if not state.queries.set_feedback(query_id, user.id, body.value):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "query not found")

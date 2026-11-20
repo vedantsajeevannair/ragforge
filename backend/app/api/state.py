@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from app.config import Settings
 from app.core.knowledge_base import KnowledgeBase
 from app.db.database import Database
-from app.db.repositories import DocumentRepository, UserRepository
+from app.db.repositories import DocumentRepository, QueryRepository, UserRepository
 from app.embeddings.factory import build_embedder
 from app.generation.answer import AnswerEngine
 from app.generation.factory import build_llm
@@ -21,6 +21,7 @@ class AppState:
     db: Database
     documents: DocumentRepository
     users: UserRepository
+    queries: QueryRepository
     kb: KnowledgeBase
     engine: AnswerEngine
 
@@ -39,6 +40,7 @@ def build_state(settings: Settings, in_memory: bool = False) -> AppState:
         db=db,
         documents=DocumentRepository(db),
         users=UserRepository(db),
+        queries=QueryRepository(db),
         kb=kb,
         engine=AnswerEngine(kb, build_llm(settings)),
     )

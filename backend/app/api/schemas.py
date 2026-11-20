@@ -66,9 +66,25 @@ class CitationOut(BaseModel):
 
 
 class AskResponse(BaseModel):
+    query_id: int
     question: str
     answer: str
     grounded: bool
     citations: list[CitationOut]
     hits: list[HitOut]
     timings_ms: dict[str, float]
+
+
+class HistoryItem(BaseModel):
+    id: int
+    question: str
+    answer: str
+    grounded: bool
+    mode: str
+    citations: list[CitationOut]
+    feedback: int | None
+    created_at: str
+
+
+class FeedbackRequest(BaseModel):
+    value: Literal[-1, 1]
