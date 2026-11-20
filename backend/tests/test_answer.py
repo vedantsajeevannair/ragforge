@@ -40,3 +40,16 @@ def test_invalid_markers_are_removed(kb):
 def test_min_score_returns_not_found(kb):
     ans = AnswerEngine(kb, ExtractiveProvider(), min_score=10.0).answer("rank fusion")
     assert ans.answer == NOT_FOUND and not ans.grounded and ans.hits == []
+
+
+def test_stream_emits_sources_tokens_done(kb):
+    events = list(AnswerEngine(kb, ExtractiveProvider()).stream("rank fusion merges"))
+    assert events[0]["type"] == "sources" and events[0]["hits"]
+    assert events[-1]["type"] == "done" and events[-1]["grounded"]
+    tokens = "".join(e["text"] for e in events if e["type"] == "token")
+    assert tokens.strip() == events[-1]["answer"]
+
+
+def test_stream_not_found(kb):
+    events = list(AnswerEngine(kb, ExtractiveProvider(), min_score=99).stream("x"))
+    assert [e["type"] for e in events] == ["sources", "token", "done"]

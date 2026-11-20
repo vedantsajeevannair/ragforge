@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 from app.core.knowledge_base import KnowledgeBase, SearchOptions
@@ -51,3 +52,26 @@ class AnswerEngine:
             timings_ms={"retrieval": (t1 - t0) * 1000, "generation": (t2 - t1) * 1000},
             grounded=bool(citations),
         )
+
+    def stream(self, question: str, options: SearchOptions | None = None) -> Iterator[dict]:
+        """Yield events: one 'sources', many 'token', then one 'done' with citations."""
+        t0 = time.perf_counter()
+        hits = [h for h in self.kb.search(question, options) if h.score >= self.min_score]
+        t1 = time.perf_counter()
+        yield {"type": "sources", "hits": hits}
+        if not hits:
+            yield {"type": "token", "text": NOT_FOUND}
+            yield {"type": "done", "answer": NOT_FOUND, "citations": [], "grounded": False,
+                   "timings_ms": {"retrieval": (t1 - t0) * 1000, "generation": 0.0}}
+            return
+        user = build_user_prompt(question, hits, self.max_context_chars)
+        parts = []
+        for token in self.llm.stream(SYSTEM_PROMPT, user):
+            parts.append(token)
+            yield {"type": "token", "text": token}
+        t2 = time.perf_counter()
+        text = strip_invalid_markers("".join(parts), len(hits)).strip()
+        citations = resolve_citations(text, hits)
+        yield {"type": "done", "answer": text, "citations": citations,
+               "grounded": bool(citations),
+               "timings_ms": {"retrieval": (t1 - t0) * 1000, "generation": (t2 - t1) * 1000}}
