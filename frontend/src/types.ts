@@ -66,6 +66,7 @@ export interface HistoryItem {
 export interface Collection {
   name: string;
   documents: number;
+  chunks: number;
 }
 
 export interface Stats {

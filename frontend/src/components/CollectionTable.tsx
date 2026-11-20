@@ -28,12 +28,16 @@ export function CollectionTable() {
       <h3>Collections</h3>
       {collections.length === 0 ? <p className="muted">No collections yet.</p> : (
         <table>
-          <thead><tr><th>Name</th><th className="num">Documents</th><th /></tr></thead>
+          <thead>
+            <tr><th>Name</th><th className="num">Documents</th><th className="num">Chunks</th>
+              <th /></tr>
+          </thead>
           <tbody>
             {collections.map((c) => (
               <tr key={c.name}>
                 <td>{c.name}</td>
                 <td className="num">{c.documents}</td>
+                <td className="num">{c.chunks}</td>
                 <td>
                   <button type="button" className="btn danger"
                     aria-label={`Delete collection ${c.name}`} onClick={() => remove(c)}>
