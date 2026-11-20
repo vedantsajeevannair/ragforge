@@ -148,6 +148,34 @@ def load_csv(data: bytes, source: str) -> Document:
                               "columns": list(reader.fieldnames or [])})
 
 
+def _flatten(value, prefix: str = "") -> list[str]:
+    if isinstance(value, dict):
+        out = []
+        for k, v in value.items():
+            out.extend(_flatten(v, f"{prefix}.{k}" if prefix else str(k)))
+        return out
+    if isinstance(value, list):
+        if all(not isinstance(v, dict | list) for v in value):
+            return [f"{prefix}: {', '.join(map(str, value))}"] if value else []
+        out = []
+        for i, v in enumerate(value):
+            out.extend(_flatten(v, f"{prefix}[{i}]"))
+        return out
+    return [f"{prefix}: {value}"] if value not in (None, "") else []
+
+
+def load_json(data: bytes, source: str) -> Document:
+    """Flatten JSON into 'path: value' lines; a top-level array becomes one block per item."""
+    try:
+        payload = json.loads(_decode(data))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid JSON: {exc.msg} at line {exc.lineno}") from exc
+    items = payload if isinstance(payload, list) else [payload]
+    blocks = ["\n".join(_flatten(item)) for item in items]
+    return Document(text="\n\n".join(b for b in blocks if b), source=source,
+                    metadata={"type": "json"})
+
+
 _LOADERS: dict[str, Loader] = {
     ".txt": load_text,
     ".md": load_markdown,
@@ -158,6 +186,7 @@ _LOADERS: dict[str, Loader] = {
     ".docx": load_docx,
     ".csv": load_csv,
     ".tsv": load_csv,
+    ".json": load_json,
 }
 
 

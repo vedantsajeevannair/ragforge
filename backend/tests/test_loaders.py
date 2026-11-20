@@ -65,3 +65,14 @@ def test_csv_loader_renders_rows():
 def test_tsv_loader_sniffs_tabs():
     doc = load_bytes(b"a\tb\n1\t2\n", "x.tsv")
     assert doc.text == "Row 1. a: 1; b: 2."
+
+
+def test_json_loader_flattens_nested_values():
+    data = b'[{"name": "ragforge", "tags": ["rag", "search"], "meta": {"stars": 5}}, {"x": null}]'
+    doc = load_bytes(data, "items.json")
+    assert doc.text == "name: ragforge\ntags: rag, search\nmeta.stars: 5"
+
+
+def test_json_loader_reports_bad_json():
+    with pytest.raises(ValueError, match="invalid JSON"):
+        load_bytes(b"{oops", "x.json")
