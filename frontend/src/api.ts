@@ -85,6 +85,15 @@ export const api = {
       body: JSON.stringify({ value }),
     }),
   stats: () => request<Stats>("/stats"),
+  users: () => request<User[]>("/users"),
+  setRole: (id: number, role: "admin" | "user") =>
+    request<User>(`/users/${id}`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  deleteUser: (id: number) => request<void>(`/users/${id}`, { method: "DELETE" }),
+  changePassword: (current_password: string, new_password: string) =>
+    request<void>("/auth/password", {
+      method: "POST",
+      body: JSON.stringify({ current_password, new_password }),
+    }),
 };
 
 export type StreamEvent =
