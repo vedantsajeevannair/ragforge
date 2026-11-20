@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.api import auth, documents, meta, query
+from app.api.errors import install_error_handlers
+from app.api.middleware import RequestContextMiddleware
 from app.api.state import build_state
 from app.config import Settings, get_settings
 
@@ -31,6 +33,8 @@ def create_app(settings: Settings | None = None, in_memory: bool = False) -> Fas
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(RequestContextMiddleware)
+    install_error_handlers(app)
     app.include_router(auth.router)
     app.include_router(documents.router)
     app.include_router(query.router)
