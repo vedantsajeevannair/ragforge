@@ -93,3 +93,10 @@ def test_ask_stream_sends_sse_events(client, loaded):
     assert events[0][0] == "sources"
     assert events[-1][0] == "done" and events[-1][1]["grounded"]
     assert client.get("/history", headers=loaded).json()[0]["id"] == events[-1][1]["query_id"]
+
+
+def test_followup_uses_previous_question(client, loaded):
+    body = {"query": "What does it merge?", "k": 1, "mode": "bm25",
+            "previous_questions": ["Tell me about reciprocal rank fusion"]}
+    hits = client.post("/search", headers=loaded, json=body).json()["hits"]
+    assert hits[0]["metadata"]["source"] == "fusion.md"

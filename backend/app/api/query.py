@@ -22,6 +22,7 @@ from app.api.state import AppState
 from app.core.knowledge_base import SearchOptions
 from app.db.repositories import UserRecord
 from app.generation.providers import LLMError
+from app.retrieval.followup import condense_question
 from app.vectorstore.base import SearchHit
 
 router = APIRouter(tags=["query"])
@@ -39,10 +40,14 @@ def _hit(h: SearchHit) -> HitOut:
                   score=round(h.score, 6), metadata=h.chunk.metadata)
 
 
+def _standalone(body: SearchRequest) -> str:
+    return condense_question(body.query, body.previous_questions)
+
+
 @router.post("/search", response_model=SearchResponse)
 def search(body: SearchRequest, _: UserRecord = Depends(current_user),
            state: AppState = Depends(get_state)) -> SearchResponse:
-    hits = state.kb.search(body.query, _options(body))
+    hits = state.kb.search(_standalone(body), _options(body))
     return SearchResponse(query=body.query, hits=[_hit(h) for h in hits])
 
 
@@ -61,7 +66,7 @@ def _ask_limit(request: Request, user: UserRecord = Depends(current_user),
 def ask(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
         state: AppState = Depends(get_state)) -> AskResponse:
     try:
-        ans = state.engine.answer(body.query, _options(body))
+        ans = state.engine.answer(_standalone(body), _options(body))
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
     citations = [CitationOut(**vars(c)) for c in ans.citations]
@@ -111,7 +116,7 @@ def ask_stream(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
 
     def events():
         try:
-            for ev in state.engine.stream(body.query, _options(body)):
+            for ev in state.engine.stream(_standalone(body), _options(body)):
                 if ev["type"] == "sources":
                     yield _sse("sources", {"hits": [_hit(h).model_dump() for h in ev["hits"]]})
                 elif ev["type"] == "token":

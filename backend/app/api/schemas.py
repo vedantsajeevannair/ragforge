@@ -42,6 +42,7 @@ class SearchRequest(BaseModel):
     collection: str | None = None
     use_mmr: bool = False
     use_rerank: bool = True
+    previous_questions: list[str] = Field(default_factory=list, max_length=10)
 
 
 class HitOut(BaseModel):
