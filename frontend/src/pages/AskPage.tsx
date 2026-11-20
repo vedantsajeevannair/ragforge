@@ -26,6 +26,12 @@ interface Result {
   confidence: number | null;
 }
 
+const EXAMPLES = [
+  "What does this collection cover?",
+  "Summarise the main points",
+  "What are the key definitions?",
+];
+
 function withSources(answer: string, citations: Citation[]): string {
   if (!citations.length) return answer;
   return `${answer}\n\nSources:\n${citations.map((c) => `[${c.number}] ${c.source}`).join("\n")}`;
@@ -145,6 +151,18 @@ export function AskPage({ initialQuestion = "" }: { initialQuestion?: string }) 
           </button>
         </div>
       </form>
+      {turns.length === 0 && !asked && (
+        <div className="panel">
+          <p className="muted">Try one of these, or upload your own documents first:</p>
+          <div className="row">
+            {EXAMPLES.map((q) => (
+              <button key={q} type="button" className="btn ghost" onClick={() => setQuestion(q)}>
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {(turns.length > 0 || asked) && (
         <div className="row" style={{ justifyContent: "space-between" }}>
           <span className="muted">
