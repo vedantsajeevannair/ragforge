@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./auth";
 import { AccountPage } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
@@ -6,6 +6,8 @@ import { AskPage } from "./pages/AskPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { LoginPage } from "./pages/LoginPage";
+import { applyTheme, loadTheme, nextTheme } from "./theme";
+import type { Theme } from "./theme";
 
 type Page = "ask" | "documents" | "history" | "account" | "admin";
 
@@ -20,6 +22,9 @@ const PAGES: Array<{ id: Page; label: string; admin?: boolean }> = [
 export function App() {
   const { user, loading, logout } = useAuth();
   const [page, setPage] = useState<Page>("ask");
+  const [theme, setTheme] = useState<Theme>(loadTheme);
+
+  useEffect(() => applyTheme(theme), [theme]);
 
   if (loading) return <p className="muted" style={{ padding: 32 }}>Loading…</p>;
   if (!user) return <LoginPage />;
@@ -39,9 +44,13 @@ export function App() {
         <div className="who">
           Signed in as <strong>{user.username}</strong> ({user.role})
           <br />
-          <button type="button" className="btn ghost" style={{ marginTop: 8 }} onClick={logout}>
-            Sign out
-          </button>
+          <div className="row" style={{ marginTop: 8 }}>
+            <button type="button" className="btn ghost" onClick={logout}>Sign out</button>
+            <button type="button" className="btn ghost" aria-label="Change theme"
+              onClick={() => setTheme(nextTheme(theme))}>
+              Theme: {theme}
+            </button>
+          </div>
         </div>
       </aside>
       <main>
