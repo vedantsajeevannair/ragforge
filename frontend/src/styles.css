@@ -75,3 +75,35 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
   main { padding: 20px; }
 }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161715;
+    --panel: #1f201e;
+    --ink: #ececea;
+    --muted: #a3a39e;
+    --line: #34352f;
+    --accent: #7fb5a3;
+    --accent-ink: #10201b;
+    --danger: #e58b82;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #161715;
+  --panel: #1f201e;
+  --ink: #ececea;
+  --muted: #a3a39e;
+  --line: #34352f;
+  --accent: #7fb5a3;
+  --accent-ink: #10201b;
+  --danger: #e58b82;
+}
+
+:root[data-theme="dark"] input[type="text"],
+:root[data-theme="dark"] input[type="password"],
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background: var(--bg);
+  color: var(--ink);
+}
