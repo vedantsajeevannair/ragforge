@@ -12,3 +12,5 @@ dist/
 coverage/
 .coverage
 .claude/
+backend/eval-report.json
+backend/eval-summary.md

@@ -26,7 +26,17 @@ jobs:
       - run: ruff check app tests
       - run: pytest -q --cov --cov-report=term
       - name: Retrieval benchmark
-        run: python -m app.eval.cli --corpus ../samples/corpus --dataset ../samples/eval.jsonl
+        run: |
+          python -m app.eval.cli --corpus ../samples/corpus --dataset ../samples/eval.jsonl \
+            --failures --json eval-report.json | tee eval-summary.md
+          cat eval-summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.12'
+        with:
+          name: eval-report
+          path: |
+            backend/eval-report.json
+            backend/eval-summary.md
 
   frontend:
     runs-on: ubuntu-latest
