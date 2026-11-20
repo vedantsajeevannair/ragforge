@@ -63,7 +63,7 @@ from app.ingestion.chunking import SentenceChunker, split_sentences  # noqa: E40
 def test_split_sentences_spans():
     text = "First one. Second one! Third? yes"
     parts = [text[s:e] for s, e in split_sentences(text)]
-    assert parts == ["First one.", "Second one!", "Third? yes"]
+    assert parts == ["First one.", "Second one!", "Third?", "yes"]
 
 
 def test_sentence_chunker_keeps_sentences_whole_with_overlap():
@@ -97,7 +97,8 @@ def test_get_chunker_by_name():
 
 
 def test_split_sentences_lowercase_starts_and_abbreviations():
-    text = "MRR rewards early hits. nDCG discounts later ones. Use tools, e.g. BM25 here."
+    text = ("MRR rewards early hits. nDCG discounts later ones. Use tools, e.g. BM25 here. "
+            "Cats nap. Dogs too.")
     parts = [text[s:e] for s, e in split_sentences(text)]
     assert parts == ["MRR rewards early hits.", "nDCG discounts later ones.",
-                     "Use tools, e.g. BM25 here."]
+                     "Use tools, e.g. BM25 here.", "Cats nap.", "Dogs too."]

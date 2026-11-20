@@ -124,8 +124,8 @@ def split_sentences(text: str) -> list[tuple[int, int]]:
     """
     spans, pos = [], 0
     for match in _SENTENCE_END.finditer(text):
-        before = text[pos:match.start()].lower()
-        if before.endswith(_ABBREVIATIONS):
+        words = text[pos:match.start()].lower().split()
+        if words and words[-1] in _ABBREVIATIONS:
             continue
         spans.append((pos, match.start()))
         pos = match.end()
