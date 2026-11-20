@@ -62,6 +62,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--chunk-size", type=int, default=400)
     parser.add_argument("--overlap", type=int, default=60)
     parser.add_argument("--json", type=Path, help="also write the full report as JSON")
+    parser.add_argument("--failures", action="store_true",
+                        help="list questions the best config did not rank first")
     args = parser.parse_args(argv)
 
     kb = build_kb(args.corpus, args.dim, args.chunk_size, args.overlap)
@@ -75,6 +77,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{kb.stats()['documents']} documents, {kb.stats()['chunks']} chunks, "
           f"{len(examples)} questions, k={args.k}\n")
     print(format_table(rows, ["hit@1", "hit@k", "mrr", "ndcg@k", "recall@k", "p50_ms"]))
+    if args.failures:
+        print("\nQuestions where hybrid+rerank+expand missed rank 1:")
+        for row in full[3]["per_question"]:
+            if row["hit@1"] < 1:
+                got = ", ".join(row["ranked_sources"][:3]) or "(nothing)"
+                print(f"- {row['question']}\n    got: {got}")
     best = SearchOptions(mode="hybrid", k=args.k)
     answers = evaluate_answers(AnswerEngine(kb, ExtractiveProvider()), examples, best)
     print("\nExtractive answers (hybrid+rerank+expand):")

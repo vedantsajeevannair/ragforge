@@ -16,3 +16,9 @@ def test_cli_runs_on_sample_corpus(tmp_path, capsys):
     assert len(report["retrieval"]) == 5
     best = report["retrieval"][3]["metrics"]
     assert best["hit@k"] >= 0.9  # regression guard for the default pipeline
+
+
+def test_cli_lists_failures(capsys):
+    main(["--corpus", str(ROOT / "corpus"), "--dataset", str(ROOT / "eval.jsonl"),
+          "--failures"])
+    assert "missed rank 1" in capsys.readouterr().out
