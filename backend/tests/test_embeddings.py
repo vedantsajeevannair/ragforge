@@ -85,3 +85,17 @@ def test_cached_embedder_evicts_oldest():
     cached = CachedEmbedder(HashingEmbedder(dim=16), max_items=2)
     cached.embed(["one"]); cached.embed(["two"]); cached.embed(["three"])
     assert "one" not in cached._cache
+
+
+from app.config import Settings  # noqa: E402
+from app.embeddings.factory import build_embedder  # noqa: E402
+
+
+def test_factory_builds_hashing_by_default():
+    e = build_embedder(Settings(embedding_dim=64))
+    assert e.dim == 64 and e.name == "cached-hashing"
+
+
+def test_factory_rejects_unknown_provider():
+    with pytest.raises(ValueError):
+        build_embedder(Settings(embedding_provider="magic"))
