@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     llm_model: str = ""
     llm_api_key: str = ""
     llm_base_url: str = ""
-    jwt_secret: str = "change-me-in-production"
+    jwt_secret: str = ""
     jwt_expiry_minutes: int = 60 * 12
     max_upload_mb: int = 20
     ask_rate_per_minute: int = 30

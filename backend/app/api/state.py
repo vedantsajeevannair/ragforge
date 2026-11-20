@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.auth.secret import resolve_jwt_secret
 from app.config import Settings
 from app.core.knowledge_base import KnowledgeBase
 from app.db.database import Database
@@ -27,6 +28,9 @@ class AppState:
 
 
 def build_state(settings: Settings, in_memory: bool = False) -> AppState:
+    if not in_memory or not settings.jwt_secret:
+        settings = settings.model_copy(update={
+            "jwt_secret": resolve_jwt_secret(settings.jwt_secret, settings.data_dir)})
     embedder = build_embedder(settings)
     if in_memory:
         db = Database(":memory:")
