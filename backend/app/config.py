@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 120
     top_k: int = 5
+    embedding_provider: str = "hashing"
     embedding_dim: int = 512
+    embedding_model: str = ""
+    embedding_base_url: str = ""
+    embedding_api_key: str = ""
     llm_provider: str = "extractive"
     llm_model: str = ""
     llm_api_key: str = ""
