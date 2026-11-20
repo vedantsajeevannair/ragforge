@@ -21,6 +21,8 @@ export interface DocumentInfo {
   chunk_count: number;
   title: string | null;
   created_at: string;
+  visibility: "shared" | "private";
+  owner_id: number | null;
 }
 
 export interface Hit {

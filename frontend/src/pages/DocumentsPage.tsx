@@ -75,6 +75,7 @@ export function DocumentsPage() {
                     <button type="button" className="btn ghost" onClick={() => showChunks(d)}>
                       {d.title || d.filename}
                     </button>
+                    {d.visibility === "private" && <span className="badge">private</span>}
                   </td>
                   <td>{d.collection}</td>
                   <td className="num">{d.chunk_count}</td>

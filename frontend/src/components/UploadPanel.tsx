@@ -11,6 +11,7 @@ interface Props {
 
 export function UploadPanel({ onUploaded }: Props) {
   const [collection, setCollection] = useState("default");
+  const [visibility, setVisibility] = useState<"shared" | "private">("shared");
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -22,7 +23,7 @@ export function UploadPanel({ onUploaded }: Props) {
     for (const file of list) {
       setBusy(file.name);
       try {
-        onUploaded(await api.upload(file, collection.trim() || "default"));
+        onUploaded(await api.upload(file, collection.trim() || "default", visibility));
       } catch (err) {
         setErrors((e) => [...e, `${file.name}: ${(err as Error).message}`]);
       }
@@ -43,6 +44,13 @@ export function UploadPanel({ onUploaded }: Props) {
         <label>Collection{" "}
           <input type="text" value={collection} pattern="[\w.-]+"
             onChange={(e) => setCollection(e.target.value)} />
+        </label>
+        <label>Visible to{" "}
+          <select value={visibility}
+            onChange={(e) => setVisibility(e.target.value as "shared" | "private")}>
+            <option value="shared">Everyone</option>
+            <option value="private">Only me and admins</option>
+          </select>
         </label>
       </div>
       <div className={`dropzone${over ? " over" : ""}`}

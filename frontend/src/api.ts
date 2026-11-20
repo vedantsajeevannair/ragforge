@@ -66,10 +66,11 @@ export const api = {
     request<DocumentInfo[]>(
       collection ? `/documents?collection=${encodeURIComponent(collection)}` : "/documents",
     ),
-  upload: (file: File, collection: string) => {
+  upload: (file: File, collection: string, visibility: "shared" | "private" = "shared") => {
     const form = new FormData();
     form.append("file", file);
     form.append("collection", collection);
+    form.append("visibility", visibility);
     return request<DocumentInfo>("/documents", { method: "POST", body: form });
   },
   deleteDocument: (docId: string) =>
