@@ -35,3 +35,11 @@ it("streams an answer and sends earlier questions on follow-ups", async () => {
   expect(body.previous_questions).toEqual(["How does BM25 work?"]);
   expect(screen.getByText("How does BM25 work?")).toBeInTheDocument();
 });
+
+
+it("focuses the question box when / is pressed", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("[]")));
+  render(<AskPage />);
+  await userEvent.keyboard("/");
+  expect(screen.getByLabelText("Question")).toHaveFocus();
+});

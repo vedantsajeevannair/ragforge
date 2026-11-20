@@ -51,6 +51,20 @@ export function AskPage() {
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    // "/" focuses the question box, like many search UIs.
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      if (e.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     api.collections().then(setCollections).catch(() => setCollections([]));
@@ -97,7 +111,8 @@ export function AskPage() {
     <section>
       <h2>Ask your documents</h2>
       <form className="panel" onSubmit={submit}>
-        <textarea aria-label="Question" placeholder="e.g. How does reciprocal rank fusion work?"
+        <textarea ref={inputRef} aria-label="Question"
+          placeholder="e.g. How does reciprocal rank fusion work?  (press / to focus, ⌘/Ctrl+Enter to ask)"
           value={question} onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit(e);
