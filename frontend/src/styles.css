@@ -7,6 +7,7 @@
   --accent: #2f5d50;
   --accent-ink: #ffffff;
   --danger: #a3362d;
+  --field: #ffffff;
   --radius: 10px;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   color: var(--ink);
@@ -36,7 +37,8 @@ main { padding: 32px 40px; max-width: 960px; }
 .btn.ghost { background: none; color: var(--ink); border: 1px solid var(--line); }
 .btn.danger { background: none; color: var(--danger); border: 1px solid var(--line); }
 input[type="text"], input[type="password"], select, textarea {
-  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fff; }
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  background: var(--field); color: var(--ink); }
 textarea { width: 100%; resize: vertical; min-height: 72px; }
 .error { color: var(--danger); font-size: 14px; }
 .muted { color: var(--muted); font-size: 13px; }
@@ -65,7 +67,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .stat .label { color: var(--muted); font-size: 13px; }
 
 .login { max-width: 360px; margin: 12vh auto; }
-.login form { display: grid; gap: 10px; }
+.login form { display: grid; gap: 12px; }
+.login label { display: grid; gap: 4px; font-size: 14px; }
 .dropzone { border: 2px dashed var(--line); border-radius: var(--radius); padding: 24px;
   text-align: center; color: var(--muted); }
 .dropzone.over { border-color: var(--accent); color: var(--accent); }
@@ -86,10 +89,12 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     --accent: #7fb5a3;
     --accent-ink: #10201b;
     --danger: #e58b82;
+    --field: #161715;
   }
 }
 
 :root[data-theme="dark"] {
+  --field: #161715;
   --bg: #161715;
   --panel: #1f201e;
   --ink: #ececea;
@@ -100,13 +105,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   --danger: #e58b82;
 }
 
-:root[data-theme="dark"] input[type="text"],
-:root[data-theme="dark"] input[type="password"],
-:root[data-theme="dark"] select,
-:root[data-theme="dark"] textarea {
-  background: var(--bg);
-  color: var(--ink);
-}
 
 mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit;
   border-radius: 3px; padding: 0 1px; }
