@@ -80,3 +80,24 @@ def test_download_original(tmp_path, admin_headers):
 def test_download_unavailable_in_memory(client, admin_headers):
     doc_id = _upload(client, admin_headers).json()["doc_id"]
     assert client.get(f"/documents/{doc_id}/download", headers=admin_headers).status_code == 404
+
+
+def test_reindex_uses_new_chunk_size(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.config import Settings
+    from app.main import create_app
+
+    text = ("Sentence about retrieval. " * 60).encode()
+    base = dict(data_dir=tmp_path, jwt_secret="r" * 40, embedding_dim=64, chunk_overlap=0)
+    with TestClient(create_app(Settings(**base, chunk_size=1000))) as c:
+        token = c.post("/auth/register", json={"username": "ann", "password": "password123"})
+        h = {"Authorization": f"Bearer {token.json()['access_token']}"}
+        before = c.post("/documents", headers=h, files={"file": ("a.txt", text)}).json()
+    with TestClient(create_app(Settings(**base, chunk_size=200))) as c:
+        token = c.post("/auth/login", json={"username": "ann", "password": "password123"})
+        h = {"Authorization": f"Bearer {token.json()['access_token']}"}
+        assert c.post("/documents/reindex", headers=h).json() == {"reindexed": 1, "skipped": []}
+        after = c.get(f"/documents/{before['doc_id']}", headers=h).json()
+        assert after["chunk_count"] > before["chunk_count"]
+        assert c.post("/search", headers=h, json={"query": "retrieval"}).json()["hits"]

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import Response
+from pydantic import BaseModel
 
-from app.api.deps import current_user, get_state
+from app.api.deps import current_user, get_state, require_admin
 from app.api.schemas import DocumentOut, HitOut
 from app.api.state import AppState
 from app.core.files import safe_filename
@@ -106,3 +107,27 @@ def download(doc_id: str, _: UserRecord = Depends(current_user),
         raise HTTPException(status.HTTP_404_NOT_FOUND, "original file not available")
     return Response(data, media_type="application/octet-stream",
                     headers={"Content-Disposition": f'attachment; filename="{rec.filename}"'})
+
+
+class ReindexResult(BaseModel):
+    reindexed: int
+    skipped: list[str]
+
+
+@router.post("/reindex", response_model=ReindexResult, tags=["admin"])
+def reindex(_: UserRecord = Depends(require_admin),
+            state: AppState = Depends(get_state)) -> ReindexResult:
+    """Re-chunk and re-embed every stored original with the current settings."""
+    done, skipped = 0, []
+    for rec in state.documents.list():
+        data = state.files.load(rec.doc_id)
+        if data is None:
+            skipped.append(rec.filename)
+            continue
+        result = ingest_bytes(data, rec.filename, state.settings.chunk_size,
+                              state.settings.chunk_overlap)
+        state.kb.add(result, collection=rec.collection)
+        rec.chunk_count = len(result.chunks)
+        state.documents.upsert(rec)
+        done += 1
+    return ReindexResult(reindexed=done, skipped=skipped)
