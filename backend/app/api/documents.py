@@ -74,7 +74,7 @@ def _index_upload(state: AppState, user: UserRecord, data: bytes, filename: str,
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     if not result.chunks:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "no extractable text found")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "no extractable text found")
     state.kb.add(result, collection=collection,
                  extra={"owner_id": user.id, "visibility": visibility})
     state.files.save(result.document.doc_id, data)
