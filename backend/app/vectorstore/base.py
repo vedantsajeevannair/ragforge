@@ -1,0 +1,60 @@
+"""Vector store interface and shared types."""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any
+
+import numpy as np
+
+
+@dataclass
+class StoredChunk:
+    chunk_id: str
+    doc_id: str
+    text: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SearchHit:
+    chunk: StoredChunk
+    score: float
+
+
+MetadataFilter = dict[str, Any]
+
+
+def matches(metadata: dict[str, Any], flt: MetadataFilter | None) -> bool:
+    """Exact-match filter; a list value means 'any of'."""
+    if not flt:
+        return True
+    for key, expected in flt.items():
+        value = metadata.get(key)
+        if isinstance(expected, list | tuple | set):
+            if value not in expected:
+                return False
+        elif value != expected:
+            return False
+    return True
+
+
+class VectorStore(ABC):
+    dim: int
+
+    @abstractmethod
+    def add(self, chunks: list[StoredChunk], vectors: np.ndarray) -> None: ...
+
+    @abstractmethod
+    def search(self, vector: np.ndarray, k: int,
+               flt: MetadataFilter | None = None) -> list[SearchHit]: ...
+
+    @abstractmethod
+    def delete_document(self, doc_id: str) -> int: ...
+
+    @abstractmethod
+    def all_chunks(self) -> list[StoredChunk]: ...
+
+    def __len__(self) -> int:
+        return len(self.all_chunks())
