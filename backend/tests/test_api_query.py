@@ -60,3 +60,17 @@ def test_ask_is_rate_limited(admin_headers):
         codes = [c.post("/ask", headers=h, json={"query": "anything"}).status_code
                  for _ in range(3)]
     assert codes == [200, 200, 429]
+
+
+def test_history_and_feedback(client, loaded, user_headers):
+    qid = client.post("/ask", headers=loaded, json={"query": "rank fusion"}).json()["query_id"]
+    hist = client.get("/history", headers=loaded).json()
+    assert hist[0]["id"] == qid and hist[0]["question"] == "rank fusion"
+    assert client.get("/history", headers=user_headers).json() == []
+    ok = client.post(f"/history/{qid}/feedback", headers=loaded, json={"value": 1})
+    assert ok.status_code == 204
+    assert client.get("/history", headers=loaded).json()[0]["feedback"] == 1
+    other = client.post(f"/history/{qid}/feedback", headers=user_headers, json={"value": -1})
+    assert other.status_code == 404
+    bad = client.post(f"/history/{qid}/feedback", headers=loaded, json={"value": 3})
+    assert bad.status_code == 422
