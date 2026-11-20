@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import json
 from collections.abc import Iterator
 
 import httpx
@@ -47,6 +48,23 @@ class AnthropicProvider(LLMProvider):
             raise LLMError(f"Anthropic API error {resp.status_code}: {resp.text[:200]}")
         return "".join(b.get("text", "") for b in resp.json()["content"] if b["type"] == "text")
 
+    def stream(self, system: str, user: str) -> Iterator[str]:
+        body = {"model": self.model, "max_tokens": self.max_tokens, "system": system,
+                "stream": True, "messages": [{"role": "user", "content": user}]}
+        with self.client.stream("POST", f"{self.base_url}/v1/messages", headers=self.headers,
+                                json=body) as resp:
+            if resp.status_code >= 400:
+                resp.read()
+                raise LLMError(f"Anthropic API error {resp.status_code}: {resp.text[:200]}")
+            for line in resp.iter_lines():
+                if not line.startswith("data:"):
+                    continue
+                event = json.loads(line[5:].strip())
+                if event.get("type") == "content_block_delta":
+                    delta = event.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        yield delta.get("text", "")
+
 
 class OpenAICompatibleProvider(LLMProvider):
     """Works with any /chat/completions endpoint: OpenAI, Ollama, vLLM, LM Studio."""
@@ -74,3 +92,22 @@ class OpenAICompatibleProvider(LLMProvider):
         if resp.status_code >= 400:
             raise LLMError(f"LLM endpoint error {resp.status_code}: {resp.text[:200]}")
         return resp.json()["choices"][0]["message"]["content"]
+
+    def stream(self, system: str, user: str) -> Iterator[str]:
+        body = {"model": self.model, "temperature": self.temperature, "stream": True,
+                "messages": [{"role": "system", "content": system},
+                             {"role": "user", "content": user}]}
+        with self.client.stream("POST", f"{self.base_url}/chat/completions",
+                                headers=self.headers, json=body) as resp:
+            if resp.status_code >= 400:
+                resp.read()
+                raise LLMError(f"LLM endpoint error {resp.status_code}: {resp.text[:200]}")
+            for line in resp.iter_lines():
+                if not line.startswith("data:"):
+                    continue
+                payload = line[5:].strip()
+                if payload == "[DONE]":
+                    break
+                delta = json.loads(payload)["choices"][0].get("delta", {})
+                if delta.get("content"):
+                    yield delta["content"]
