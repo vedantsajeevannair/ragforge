@@ -84,4 +84,5 @@ export interface AskOptions {
   collection?: string;
   use_mmr: boolean;
   use_rerank: boolean;
+  previous_questions?: string[];
 }
