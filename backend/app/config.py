@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     jwt_secret: str = ""
     jwt_expiry_minutes: int = 60 * 12
     max_upload_mb: int = 20
+    # Uploads larger than this are indexed in the background and return 202 + a job id.
+    async_upload_kb: int = 2048
     ask_rate_per_minute: int = 30
     log_level: str = "INFO"
     json_logs: bool = False

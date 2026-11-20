@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from app import __version__
-from app.api import auth, documents, meta, metrics, query, users
+from app.api import auth, documents, jobs, meta, metrics, query, users
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.api.state import build_state
@@ -26,6 +26,8 @@ def create_app(settings: Settings | None = None, in_memory: bool = False) -> Fas
         if not hasattr(app.state, "ragforge"):
             app.state.ragforge = build_state(settings, in_memory=in_memory)
         yield
+        app.state.ragforge.jobs.join()
+        app.state.ragforge.jobs.shutdown()
         app.state.ragforge.db.close()
 
     app = FastAPI(title=settings.app_name, version=__version__, lifespan=lifespan)
@@ -45,6 +47,7 @@ def create_app(settings: Settings | None = None, in_memory: bool = False) -> Fas
     app.include_router(query.router)
     app.include_router(meta.router)
     app.include_router(users.router)
+    app.include_router(jobs.router)
     app.include_router(metrics.router)
 
     @app.get("/", include_in_schema=False)

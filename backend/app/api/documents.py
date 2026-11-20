@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from app.api.access import can_view
@@ -25,7 +26,8 @@ def _out(rec: DocumentRecord) -> DocumentOut:
     return DocumentOut(**{k: getattr(rec, k) for k in DocumentOut.model_fields})
 
 
-@router.post("", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=DocumentOut, status_code=status.HTTP_201_CREATED,
+             responses={202: {"description": "Large file accepted; poll /jobs/{id}"}})
 async def upload(
     file: UploadFile = File(...),
     collection: str = Form("default", min_length=1, max_length=60, pattern=r"^[\w.-]+$"),
@@ -42,12 +44,29 @@ async def upload(
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "file is empty")
     filename = safe_filename(file.filename or "upload.txt")
+    if Path(filename).suffix.lower() not in supported_extensions():
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                            f"Unsupported file type. Supported: {', '.join(supported_extensions())}")
     try:
         check_content(data, filename)
-        result = ingest_bytes(data, filename, state.settings.chunk_size,
-                              state.settings.chunk_overlap, strategy)
     except ContentMismatch as exc:
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, str(exc)) from exc
+
+    def work() -> DocumentOut:
+        return _index_upload(state, user, data, filename, collection, strategy, visibility)
+
+    if len(data) > state.settings.async_upload_kb * 1024:
+        job = state.jobs.submit("upload", user.id, lambda: work().model_dump())
+        return JSONResponse({"job_id": job.id, "status": job.status},
+                            status_code=status.HTTP_202_ACCEPTED)
+    return work()
+
+
+def _index_upload(state: AppState, user: UserRecord, data: bytes, filename: str,
+                  collection: str, strategy: str | None, visibility: str) -> DocumentOut:
+    try:
+        result = ingest_bytes(data, filename, state.settings.chunk_size,
+                              state.settings.chunk_overlap, strategy)
     except UnsupportedFileType as exc:
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                             f"{exc}. Supported: {', '.join(supported_extensions())}") from exc

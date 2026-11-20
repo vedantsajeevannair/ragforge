@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from app.auth.secret import resolve_jwt_secret
 from app.config import Settings
 from app.core.files import FileStore
+from app.core.jobs import JobQueue
 from app.core.knowledge_base import KnowledgeBase
 from app.db.database import Database
 from app.db.repositories import DocumentRepository, QueryRepository, UserRepository
@@ -26,6 +27,7 @@ class AppState:
     queries: QueryRepository
     kb: KnowledgeBase
     files: FileStore
+    jobs: JobQueue
     engine: AnswerEngine
 
 
@@ -52,5 +54,6 @@ def build_state(settings: Settings, in_memory: bool = False) -> AppState:
         queries=QueryRepository(db),
         kb=kb,
         files=files,
+        jobs=JobQueue(),
         engine=AnswerEngine(kb, build_llm(settings)),
     )
