@@ -8,6 +8,8 @@ plain text, ask questions, and get answers that cite the passages they came from
 It runs fully offline by default (hashing embeddings plus an extractive answerer) and can be
 switched to Claude, any OpenAI-compatible API, or a local Ollama model with one environment variable.
 
+![Ask page: streamed answer with citation chips, confidence and sources](docs/screenshots/ask.jpg)
+
 ## Features
 
 - **Ingestion**: PDF (with page numbers), Markdown (heading-aware), HTML and text loaders;
@@ -22,6 +24,11 @@ switched to Claude, any OpenAI-compatible API, or a local Ollama model with one 
 - **Multi-user API**: JWT auth with admin and user roles, collections, per-user history,
   answer feedback and per-user rate limiting.
 - **React UI**: ask page, document manager with drag-and-drop upload, history and admin stats.
+
+<p>
+  <img src="docs/screenshots/documents.jpg" width="49%" alt="Document manager">
+  <img src="docs/screenshots/admin.jpg" width="49%" alt="Admin overview">
+</p>
 
 ## Architecture
 
