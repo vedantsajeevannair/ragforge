@@ -48,3 +48,22 @@ def test_openai_provider_round_trip():
 def test_openai_provider_requires_url_and_model():
     with pytest.raises(LLMError):
         OpenAICompatibleProvider("", "")
+
+
+from app.config import Settings  # noqa: E402
+from app.generation.extractive import ExtractiveProvider  # noqa: E402
+from app.generation.factory import build_llm  # noqa: E402
+
+
+def test_factory_defaults_to_extractive():
+    assert isinstance(build_llm(Settings()), ExtractiveProvider)
+
+
+def test_factory_builds_openai_compatible():
+    p = build_llm(Settings(llm_provider="ollama", llm_base_url="http://h/v1", llm_model="m"))
+    assert isinstance(p, OpenAICompatibleProvider)
+
+
+def test_factory_rejects_unknown():
+    with pytest.raises(ValueError):
+        build_llm(Settings(llm_provider="nope"))
