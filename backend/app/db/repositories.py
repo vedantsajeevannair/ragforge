@@ -50,20 +50,30 @@ class DocumentRepository:
         rows = self.db.query("SELECT * FROM documents WHERE doc_id = ?", (doc_id,))
         return DocumentRecord(**dict(rows[0])) if rows else None
 
+    @staticmethod
+    def _where(collection: str | None, viewer_id: int | None) -> tuple[str, list]:
+        clauses, params = [], []
+        if collection:
+            clauses.append("collection = ?")
+            params.append(collection)
+        if viewer_id is not None:
+            clauses.append("(visibility = 'shared' OR owner_id = ?)")
+            params.append(viewer_id)
+        return ("WHERE " + " AND ".join(clauses)) if clauses else "", params
+
     def list(self, collection: str | None = None, limit: int | None = None,
-             offset: int = 0) -> list[DocumentRecord]:
-        where, params = ("WHERE collection = ?", [collection]) if collection else ("", [])
+             offset: int = 0, viewer_id: int | None = None) -> list[DocumentRecord]:
+        """List documents; pass viewer_id to hide other users' private documents."""
+        where, params = self._where(collection, viewer_id)
         sql = f"SELECT * FROM documents {where} ORDER BY created_at DESC, filename"
         if limit is not None:
             sql += " LIMIT ? OFFSET ?"
             params += [limit, offset]
         return [DocumentRecord(**dict(r)) for r in self.db.query(sql, tuple(params))]
 
-    def count(self, collection: str | None = None) -> int:
-        if collection:
-            return self.db.query("SELECT COUNT(*) FROM documents WHERE collection = ?",
-                                 (collection,))[0][0]
-        return self.db.query("SELECT COUNT(*) FROM documents")[0][0]
+    def count(self, collection: str | None = None, viewer_id: int | None = None) -> int:
+        where, params = self._where(collection, viewer_id)
+        return self.db.query(f"SELECT COUNT(*) FROM documents {where}", tuple(params))[0][0]
 
     def delete(self, doc_id: str) -> bool:
         with self.db.tx() as conn:

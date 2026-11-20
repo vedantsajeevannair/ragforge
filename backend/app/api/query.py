@@ -7,6 +7,7 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 
+from app.api.access import search_filter
 from app.api.deps import current_user, get_state
 from app.api.ratelimit import TokenBucket
 from app.api.schemas import (
@@ -29,10 +30,10 @@ from app.vectorstore.base import SearchHit
 router = APIRouter(tags=["query"])
 
 
-def _options(body: SearchRequest) -> SearchOptions:
+def _options(body: SearchRequest, user: UserRecord) -> SearchOptions:
     return SearchOptions(
         k=body.k, mode=body.mode, use_mmr=body.use_mmr, use_rerank=body.use_rerank,
-        flt={"collection": body.collection} if body.collection else None,
+        flt=search_filter(user, body.collection),
     )
 
 
@@ -47,9 +48,9 @@ def _standalone(body: SearchRequest) -> str:
 
 
 @router.post("/search", response_model=SearchResponse)
-def search(body: SearchRequest, _: UserRecord = Depends(current_user),
+def search(body: SearchRequest, user: UserRecord = Depends(current_user),
            state: AppState = Depends(get_state)) -> SearchResponse:
-    hits = state.kb.search(_standalone(body), _options(body))
+    hits = state.kb.search(_standalone(body), _options(body, user))
     q = _standalone(body)
     return SearchResponse(query=body.query, hits=[_hit(h, q) for h in hits])
 
@@ -69,7 +70,7 @@ def _ask_limit(request: Request, user: UserRecord = Depends(current_user),
 def ask(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
         state: AppState = Depends(get_state)) -> AskResponse:
     try:
-        ans = state.engine.answer(_standalone(body), _options(body))
+        ans = state.engine.answer(_standalone(body), _options(body, user))
     except LLMError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
     citations = [CitationOut(**vars(c)) for c in ans.citations]
@@ -119,7 +120,7 @@ def ask_stream(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
 
     def events():
         try:
-            for ev in state.engine.stream(_standalone(body), _options(body)):
+            for ev in state.engine.stream(_standalone(body), _options(body, user)):
                 if ev["type"] == "sources":
                     q = _standalone(body)
                     yield _sse("sources", {"hits": [_hit(h, q).model_dump() for h in ev["hits"]]})

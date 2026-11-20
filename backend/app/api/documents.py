@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from app.api.access import can_view
 from app.api.deps import current_user, get_state, require_admin
 from app.api.schemas import DocumentOut, HitOut
 from app.api.state import AppState
@@ -70,26 +71,31 @@ async def upload(
 @router.get("", response_model=list[DocumentOut])
 def list_documents(response: Response, collection: str | None = None,
                    limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0),
-                   _: UserRecord = Depends(current_user),
+                   user: UserRecord = Depends(current_user),
                    state: AppState = Depends(get_state)) -> list[DocumentOut]:
-    response.headers["X-Total-Count"] = str(state.documents.count(collection))
-    return [_out(r) for r in state.documents.list(collection, limit, offset)]
+    viewer = None if user.role == "admin" else user.id
+    response.headers["X-Total-Count"] = str(state.documents.count(collection, viewer))
+    return [_out(r) for r in state.documents.list(collection, limit, offset, viewer)]
+
+
+def _visible(doc_id: str, user: UserRecord, state: AppState):
+    rec = state.documents.get(doc_id)
+    # Hidden documents answer 404, not 403, so their existence is not revealed.
+    if rec is None or not can_view(user, rec):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "document not found")
+    return rec
 
 
 @router.get("/{doc_id}", response_model=DocumentOut)
-def get_document(doc_id: str, _: UserRecord = Depends(current_user),
+def get_document(doc_id: str, user: UserRecord = Depends(current_user),
                  state: AppState = Depends(get_state)) -> DocumentOut:
-    rec = state.documents.get(doc_id)
-    if rec is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "document not found")
-    return _out(rec)
+    return _out(_visible(doc_id, user, state))
 
 
 @router.get("/{doc_id}/chunks", response_model=list[HitOut])
-def get_chunks(doc_id: str, _: UserRecord = Depends(current_user),
+def get_chunks(doc_id: str, user: UserRecord = Depends(current_user),
                state: AppState = Depends(get_state)) -> list[HitOut]:
-    if state.documents.get(doc_id) is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "document not found")
+    _visible(doc_id, user, state)
     chunks = [c for c in state.kb.store.all_chunks() if c.doc_id == doc_id]
     chunks.sort(key=lambda c: c.metadata.get("start", 0))
     return [HitOut(chunk_id=c.chunk_id, doc_id=c.doc_id, text=c.text, score=0.0,
@@ -99,9 +105,7 @@ def get_chunks(doc_id: str, _: UserRecord = Depends(current_user),
 @router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(doc_id: str, user: UserRecord = Depends(current_user),
                     state: AppState = Depends(get_state)) -> None:
-    rec = state.documents.get(doc_id)
-    if rec is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "document not found")
+    rec = _visible(doc_id, user, state)
     if user.role != "admin" and rec.owner_id != user.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "only the owner or an admin can delete")
     state.kb.delete(doc_id)
@@ -110,11 +114,11 @@ def delete_document(doc_id: str, user: UserRecord = Depends(current_user),
 
 
 @router.get("/{doc_id}/download")
-def download(doc_id: str, _: UserRecord = Depends(current_user),
+def download(doc_id: str, user: UserRecord = Depends(current_user),
              state: AppState = Depends(get_state)) -> Response:
-    rec = state.documents.get(doc_id)
-    data = state.files.load(doc_id) if rec else None
-    if rec is None or data is None:
+    rec = _visible(doc_id, user, state)
+    data = state.files.load(doc_id)
+    if data is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "original file not available")
     return Response(data, media_type="application/octet-stream",
                     headers={"Content-Disposition": f'attachment; filename="{rec.filename}"'})
