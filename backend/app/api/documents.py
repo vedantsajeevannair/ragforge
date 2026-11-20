@@ -45,8 +45,9 @@ async def upload(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "file is empty")
     filename = safe_filename(file.filename or "upload.txt")
     if Path(filename).suffix.lower() not in supported_extensions():
+        supported = ", ".join(supported_extensions())
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                            f"Unsupported file type. Supported: {', '.join(supported_extensions())}")
+                            f"Unsupported file type. Supported: {supported}")
     try:
         check_content(data, filename)
     except ContentMismatch as exc:

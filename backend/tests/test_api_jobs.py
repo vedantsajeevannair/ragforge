@@ -45,4 +45,5 @@ def test_failed_job_reports_clean_error_and_is_private():
 def test_small_upload_stays_synchronous():
     with _client() as c:
         h = _login(c, "ann")
-        assert c.post("/documents", headers=h, files={"file": ("s.txt", b"tiny")}).status_code == 201
+        resp = c.post("/documents", headers=h, files={"file": ("s.txt", b"tiny")})
+        assert resp.status_code == 201
