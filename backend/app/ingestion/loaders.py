@@ -6,10 +6,10 @@ import csv
 import io
 import json
 import zipfile
-from xml.etree import ElementTree
 from collections.abc import Callable
 from html.parser import HTMLParser
 from pathlib import Path
+from xml.etree import ElementTree
 
 from app.ingestion.models import Document
 
