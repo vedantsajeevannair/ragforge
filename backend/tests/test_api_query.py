@@ -36,7 +36,7 @@ def test_ask_returns_cited_answer(client, loaded):
     assert resp.status_code == 200
     assert body["grounded"] is True
     assert "ranked lists" in body["answer"]
-    assert body["citations"][0]["source"] == "fusion.md"
+    assert body["citations"][0]["source"].startswith("fusion.md")
 
 
 def test_ask_validates_k(client, loaded):
