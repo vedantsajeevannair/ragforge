@@ -71,3 +71,17 @@ def test_sentence_chunker_keeps_sentences_whole_with_overlap():
     chunks = SentenceChunker(size=35, overlap_sentences=1).split(Document(text=text, source="s"))
     assert chunks[0].text == "Alpha is first. Beta is second."
     assert chunks[1].text.startswith("Beta is second.")
+
+
+from app.ingestion.chunking import MarkdownChunker  # noqa: E402
+
+
+def test_markdown_chunker_records_heading_path():
+    md = "# Guide\nIntro text.\n## Install\nRun pip.\n## Usage\nCall it.\n# FAQ\nAsk."
+    chunks = MarkdownChunker(size=200, overlap=0).split(Document(text=md, source="g.md"))
+    sections = [c.metadata.get("section") for c in chunks]
+    assert "Guide > Install" in sections
+    assert "Guide > Usage" in sections
+    assert "FAQ" in sections
+    for c in chunks:
+        assert md[c.start:c.end] == c.text
