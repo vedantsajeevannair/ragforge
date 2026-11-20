@@ -27,7 +27,7 @@ function downloadCsv(items: HistoryItem[]) {
   URL.revokeObjectURL(url);
 }
 
-export function HistoryPage() {
+export function HistoryPage({ onAskAgain }: { onAskAgain?: (question: string) => void }) {
   const [items, setItems] = useState<HistoryItem[] | null>(null);
   const [open, setOpen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,15 @@ export function HistoryPage() {
           {open === item.id && (
             <>
               <AnswerView answer={item.answer} citations={item.citations} />
-              <Feedback queryId={item.id} initial={item.feedback} />
+              <div className="row">
+                <Feedback queryId={item.id} initial={item.feedback} />
+                {onAskAgain && (
+                  <button type="button" className="btn ghost"
+                    onClick={() => onAskAgain(item.question)}>
+                    Ask again
+                  </button>
+                )}
+              </div>
             </>
           )}
         </div>

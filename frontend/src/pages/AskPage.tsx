@@ -38,8 +38,8 @@ function confidenceLabel(c: number): string {
   return c >= 0.7 ? "high" : c >= 0.4 ? "medium" : "low";
 }
 
-export function AskPage() {
-  const [question, setQuestion] = useState("");
+export function AskPage({ initialQuestion = "" }: { initialQuestion?: string }) {
+  const [question, setQuestion] = useState(initialQuestion);
   const [mode, setMode] = useState<SearchMode>("hybrid");
   const [k, setK] = useState(5);
   const [collection, setCollection] = useState("");

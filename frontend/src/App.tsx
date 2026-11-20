@@ -24,6 +24,7 @@ export function App() {
   const { user, loading, logout } = useAuth();
   const [page, setPage] = useState<Page>("ask");
   const [theme, setTheme] = useState<Theme>(loadTheme);
+  const [prefill, setPrefill] = useState("");
 
   useEffect(() => applyTheme(theme), [theme]);
 
@@ -56,9 +57,11 @@ export function App() {
       </aside>
       <main>
         <ErrorBoundary key={page}>
-        {page === "ask" && <AskPage />}
+        {page === "ask" && <AskPage key={prefill} initialQuestion={prefill} />}
         {page === "documents" && <DocumentsPage />}
-        {page === "history" && <HistoryPage />}
+        {page === "history" && (
+          <HistoryPage onAskAgain={(q) => { setPrefill(q); setPage("ask"); }} />
+        )}
         {page === "account" && <AccountPage />}
         {page === "admin" && <AdminPage />}
         </ErrorBoundary>
