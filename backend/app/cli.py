@@ -54,7 +54,11 @@ def main(argv: list[str] | None = None) -> int:
     p_ask.add_argument("--mode", choices=["dense", "bm25", "hybrid"], default="hybrid")
     args = parser.parse_args(argv)
     state = build_state(get_settings())
-    return {"index": cmd_index, "ask": cmd_ask}[args.command](args, state)
+    try:
+        return {"index": cmd_index, "ask": cmd_ask}[args.command](args, state)
+    finally:
+        state.jobs.shutdown()
+        state.db.close()
 
 
 if __name__ == "__main__":

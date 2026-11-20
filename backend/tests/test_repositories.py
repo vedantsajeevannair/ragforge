@@ -8,7 +8,8 @@ from app.db.repositories import DocumentRecord, DocumentRepository, UserReposito
 
 @pytest.fixture
 def db():
-    return Database(":memory:")
+    with Database(":memory:") as database:
+        yield database
 
 
 def _rec(doc_id="d1", collection="default", chunks=3):

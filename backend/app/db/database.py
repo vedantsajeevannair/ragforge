@@ -90,3 +90,9 @@ class Database:
 
     def close(self) -> None:
         self._conn.close()
+
+    def __enter__(self) -> Database:
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
