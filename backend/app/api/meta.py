@@ -18,6 +18,7 @@ router = APIRouter(tags=["meta"])
 class CollectionOut(BaseModel):
     name: str
     documents: int
+    chunks: int = 0
 
 
 class StatsOut(BaseModel):
@@ -47,7 +48,12 @@ class ConfigOut(BaseModel):
 @router.get("/collections", response_model=list[CollectionOut])
 def collections(_: UserRecord = Depends(current_user),
                 state: AppState = Depends(get_state)) -> list[CollectionOut]:
-    return [CollectionOut(name=n, documents=c) for n, c in state.documents.collections()]
+    chunk_counts: dict[str, int] = {}
+    for chunk in state.kb.store.all_chunks():
+        name = chunk.metadata.get("collection", "default")
+        chunk_counts[name] = chunk_counts.get(name, 0) + 1
+    return [CollectionOut(name=n, documents=c, chunks=chunk_counts.get(n, 0))
+            for n, c in state.documents.collections()]
 
 
 @router.get("/stats", response_model=StatsOut)
