@@ -17,3 +17,10 @@ def test_tx_rolls_back_on_error():
             conn.execute("INSERT INTO users(username, password_hash) VALUES ('a', 'h')")
             raise RuntimeError
     assert db.query("SELECT * FROM users") == []
+
+
+def test_visibility_column_defaults_to_shared():
+    db = Database(":memory:")
+    db.query("INSERT INTO documents(doc_id, filename, size_bytes, chunk_count) "
+             "VALUES ('d', 'f', 1, 1)")
+    assert db.query("SELECT visibility FROM documents")[0][0] == "shared"

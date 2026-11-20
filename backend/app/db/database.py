@@ -46,6 +46,9 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX idx_queries_user ON queries(user_id, created_at);
     """,
+    """
+    ALTER TABLE documents ADD COLUMN visibility TEXT NOT NULL DEFAULT 'shared';
+    """,
 ]
 
 

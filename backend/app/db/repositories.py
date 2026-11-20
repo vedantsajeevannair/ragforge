@@ -18,6 +18,7 @@ class DocumentRecord:
     title: str | None
     owner_id: int | None
     created_at: str
+    visibility: str = "shared"
 
 
 @dataclass
@@ -36,13 +37,13 @@ class DocumentRepository:
         with self.db.tx() as conn:
             conn.execute(
                 """INSERT INTO documents(doc_id, filename, collection, doc_type, size_bytes,
-                       chunk_count, title, owner_id)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                       chunk_count, title, owner_id, visibility)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(doc_id) DO UPDATE SET filename=excluded.filename,
                        collection=excluded.collection, chunk_count=excluded.chunk_count,
-                       title=excluded.title""",
+                       title=excluded.title, visibility=excluded.visibility""",
                 (rec.doc_id, rec.filename, rec.collection, rec.doc_type, rec.size_bytes,
-                 rec.chunk_count, rec.title, rec.owner_id),
+                 rec.chunk_count, rec.title, rec.owner_id, rec.visibility),
             )
 
     def get(self, doc_id: str) -> DocumentRecord | None:
