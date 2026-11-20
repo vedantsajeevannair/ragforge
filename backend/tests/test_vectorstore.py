@@ -52,3 +52,27 @@ def test_dim_mismatch_raises():
 
 def test_empty_store_returns_nothing():
     assert InMemoryVectorStore(dim=2).search(_unit(1, 0), k=3) == []
+
+
+from app.vectorstore.persistent import PersistentVectorStore  # noqa: E402
+
+
+def test_persistent_store_round_trips(tmp_path):
+    s = PersistentVectorStore(dim=2, directory=tmp_path)
+    s.add([_chunk("a", type="pdf"), _chunk("b")], np.stack([_unit(1, 0), _unit(0, 1)]))
+    reloaded = PersistentVectorStore(dim=2, directory=tmp_path)
+    assert len(reloaded) == 2
+    assert reloaded.search(_unit(1, 0), k=1)[0].chunk.metadata == {"type": "pdf"}
+
+
+def test_persistent_store_saves_deletes(tmp_path):
+    s = PersistentVectorStore(dim=2, directory=tmp_path)
+    s.add([_chunk("a"), _chunk("b", doc="d2")], np.stack([_unit(1, 0), _unit(0, 1)]))
+    s.delete_document("d1")
+    assert [c.chunk_id for c in PersistentVectorStore(2, tmp_path).all_chunks()] == ["b"]
+
+
+def test_persistent_store_rejects_dim_change(tmp_path):
+    PersistentVectorStore(dim=2, directory=tmp_path).add([_chunk("a")], np.stack([_unit(1, 0)]))
+    with pytest.raises(ValueError, match="re-index"):
+        PersistentVectorStore(dim=3, directory=tmp_path)
