@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-production"
     jwt_expiry_minutes: int = 60 * 12
     max_upload_mb: int = 20
+    ask_rate_per_minute: int = 30
     cors_origins: list[str] = ["http://localhost:5173"]
 
 

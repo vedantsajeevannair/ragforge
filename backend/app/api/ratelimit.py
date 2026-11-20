@@ -5,11 +5,6 @@ from __future__ import annotations
 import threading
 import time
 
-from fastapi import Depends, HTTPException, status
-
-from app.api.deps import current_user
-from app.db.repositories import UserRecord
-
 
 class TokenBucket:
     def __init__(self, rate_per_minute: int, burst: int | None = None,
@@ -31,11 +26,3 @@ class TokenBucket:
             self._buckets[key] = (tokens - 1, now)
             return True
 
-
-def rate_limited(bucket: TokenBucket):
-    def dependency(user: UserRecord = Depends(current_user)) -> UserRecord:
-        if not bucket.allow(str(user.id)):
-            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "rate limit exceeded",
-                                headers={"Retry-After": "5"})
-        return user
-    return dependency

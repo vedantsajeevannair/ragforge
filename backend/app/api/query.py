@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.deps import current_user, get_state
+from app.api.ratelimit import TokenBucket
 from app.api.schemas import AskResponse, CitationOut, HitOut, SearchRequest, SearchResponse
 from app.api.state import AppState
 from app.core.knowledge_base import SearchOptions
@@ -34,8 +35,19 @@ def search(body: SearchRequest, _: UserRecord = Depends(current_user),
     return SearchResponse(query=body.query, hits=[_hit(h) for h in hits])
 
 
+def _ask_limit(request: Request, user: UserRecord = Depends(current_user),
+               state: AppState = Depends(get_state)) -> UserRecord:
+    bucket = getattr(request.app.state, "ask_bucket", None)
+    if bucket is None:
+        bucket = request.app.state.ask_bucket = TokenBucket(state.settings.ask_rate_per_minute)
+    if not bucket.allow(str(user.id)):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "rate limit exceeded",
+                            headers={"Retry-After": "5"})
+    return user
+
+
 @router.post("/ask", response_model=AskResponse)
-def ask(body: SearchRequest, _: UserRecord = Depends(current_user),
+def ask(body: SearchRequest, _: UserRecord = Depends(_ask_limit),
         state: AppState = Depends(get_state)) -> AskResponse:
     try:
         ans = state.engine.answer(body.query, _options(body))

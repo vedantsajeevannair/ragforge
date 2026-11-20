@@ -45,3 +45,18 @@ def test_ask_validates_k(client, loaded):
 
 def test_query_requires_auth(client):
     assert client.post("/search", json={"query": "x"}).status_code == 401
+
+
+def test_ask_is_rate_limited(admin_headers):
+    from fastapi.testclient import TestClient
+
+    from app.config import Settings
+    from app.main import create_app
+
+    settings = Settings(jwt_secret="s" * 40, embedding_dim=64, ask_rate_per_minute=2)
+    with TestClient(create_app(settings, in_memory=True)) as c:
+        r = c.post("/auth/register", json={"username": "zed", "password": "password123"})
+        h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        codes = [c.post("/ask", headers=h, json={"query": "anything"}).status_code
+                 for _ in range(3)]
+    assert codes == [200, 200, 429]
