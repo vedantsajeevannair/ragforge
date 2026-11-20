@@ -51,6 +51,13 @@ def create_app(settings: Settings | None = None, in_memory: bool = False) -> Fas
     def root() -> RedirectResponse:
         return RedirectResponse("/docs")
 
+    @app.get("/ready", tags=["meta"])
+    def ready() -> dict[str, object]:
+        """Readiness: the database answers and the index is loaded."""
+        state = app.state.ragforge
+        state.db.query("SELECT 1")
+        return {"status": "ready", **state.kb.stats()}
+
     @app.get("/health", tags=["meta"])
     def health() -> dict[str, str]:
         return {"status": "ok", "version": __version__}

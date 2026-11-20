@@ -17,3 +17,8 @@ def test_request_id_generated_when_missing(client):
 def test_root_redirects_to_api_docs(client):
     resp = client.get("/", follow_redirects=False)
     assert resp.status_code == 307 and resp.headers["location"] == "/docs"
+
+
+def test_ready_reports_index_size(client):
+    body = client.get("/ready").json()
+    assert body == {"status": "ready", "chunks": 0, "documents": 0}
