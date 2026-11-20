@@ -20,7 +20,7 @@ dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.4"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-filterwarnings = ["ignore:Using `httpx`:DeprecationWarning"]
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]
 
 [tool.ruff]
 line-length = 100
