@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 120
     top_k: int = 5
+    max_context_chars: int = 12000
+    min_score: float = 0.0
+    system_prompt: str = ""
     contextual_headers: bool = False
     synonyms_file: Path | None = None
     # Weight of the dense ranking in hybrid fusion (BM25 is 1.0). Unset means 0.5 for the

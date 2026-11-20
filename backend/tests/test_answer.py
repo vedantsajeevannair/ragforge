@@ -53,3 +53,18 @@ def test_stream_emits_sources_tokens_done(kb):
 def test_stream_not_found(kb):
     events = list(AnswerEngine(kb, ExtractiveProvider(), min_score=99).stream("x"))
     assert [e["type"] for e in events] == ["sources", "token", "done"]
+
+
+class _Capture(LLMProvider):
+    def __init__(self):
+        self.system = None
+
+    def complete(self, system, user):
+        self.system = system
+        return "ok [1]"
+
+
+def test_custom_system_prompt_is_used(kb):
+    llm = _Capture()
+    AnswerEngine(kb, llm, system_prompt="Answer like a pirate.").answer("rank fusion")
+    assert llm.system == "Answer like a pirate."

@@ -28,11 +28,12 @@ class Answer:
 
 class AnswerEngine:
     def __init__(self, kb: KnowledgeBase, llm: LLMProvider, min_score: float = 0.0,
-                 max_context_chars: int = 12000) -> None:
+                 max_context_chars: int = 12000, system_prompt: str = "") -> None:
         self.kb = kb
         self.llm = llm
         self.min_score = min_score
         self.max_context_chars = max_context_chars
+        self.system_prompt = system_prompt or SYSTEM_PROMPT
 
     def answer(self, question: str, options: SearchOptions | None = None) -> Answer:
         t0 = time.perf_counter()
@@ -42,7 +43,7 @@ class AnswerEngine:
             return Answer(question, NOT_FOUND, [], [],
                           {"retrieval": (t1 - t0) * 1000, "generation": 0.0}, grounded=False)
         user = build_user_prompt(question, hits, self.max_context_chars)
-        raw = self.llm.complete(SYSTEM_PROMPT, user)
+        raw = self.llm.complete(self.system_prompt, user)
         t2 = time.perf_counter()
         text = strip_invalid_markers(raw, len(hits)).strip()
         citations = resolve_citations(text, hits)
@@ -70,7 +71,7 @@ class AnswerEngine:
             return
         user = build_user_prompt(question, hits, self.max_context_chars)
         parts = []
-        for token in self.llm.stream(SYSTEM_PROMPT, user):
+        for token in self.llm.stream(self.system_prompt, user):
             parts.append(token)
             yield {"type": "token", "text": token}
         t2 = time.perf_counter()

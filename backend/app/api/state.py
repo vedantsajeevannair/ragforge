@@ -56,5 +56,6 @@ def build_state(settings: Settings, in_memory: bool = False) -> AppState:
         kb=kb,
         files=files,
         jobs=JobQueue(),
-        engine=AnswerEngine(kb, build_llm(settings)),
+        engine=AnswerEngine(kb, build_llm(settings), settings.min_score,
+                            settings.max_context_chars, settings.system_prompt),
     )
