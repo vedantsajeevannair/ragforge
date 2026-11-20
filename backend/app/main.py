@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import auth
+from app.api import auth, documents
 from app.api.state import build_state
 from app.config import Settings, get_settings
 
@@ -32,6 +32,7 @@ def create_app(settings: Settings | None = None, in_memory: bool = False) -> Fas
         allow_headers=["*"],
     )
     app.include_router(auth.router)
+    app.include_router(documents.router)
 
     @app.get("/health", tags=["meta"])
     def health() -> dict[str, str]:
