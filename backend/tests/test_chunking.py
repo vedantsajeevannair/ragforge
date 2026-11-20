@@ -85,3 +85,12 @@ def test_markdown_chunker_records_heading_path():
     assert "FAQ" in sections
     for c in chunks:
         assert md[c.start:c.end] == c.text
+
+
+from app.ingestion.chunking import get_chunker  # noqa: E402
+
+
+def test_get_chunker_by_name():
+    assert isinstance(get_chunker("recursive", 100, 10), RecursiveChunker)
+    with pytest.raises(ValueError):
+        get_chunker("nope", 100, 10)
