@@ -32,9 +32,13 @@ def _parse_prompt(user: str) -> tuple[list[tuple[int, str]], str]:
 class ExtractiveProvider(LLMProvider):
     name = "extractive"
 
-    def __init__(self, max_sentences: int = 3, min_overlap: float = 0.2) -> None:
+    def __init__(self, max_sentences: int = 3, min_overlap: float = 0.2,
+                 relative_cutoff: float = 0.6) -> None:
         self.max_sentences = max_sentences
         self.min_overlap = min_overlap
+        # Only keep sentences scoring at least this share of the best sentence, so a
+        # strong match is not padded with loosely related filler.
+        self.relative_cutoff = relative_cutoff
 
     def complete(self, system: str, user: str) -> str:
         blocks, question = _parse_prompt(user)
@@ -56,8 +60,11 @@ class ExtractiveProvider(LLMProvider):
         if not scored:
             return NOT_FOUND
         scored.sort(key=lambda x: -x[0])
+        floor = scored[0][0] * self.relative_cutoff
         picked, seen = [], set()
-        for _, num, sentence in scored:
+        for score, num, sentence in scored:
+            if score < floor:
+                break
             if sentence.lower() in seen:
                 continue
             seen.add(sentence.lower())

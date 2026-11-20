@@ -37,3 +37,12 @@ def test_extractive_does_not_quote_markdown_headings():
                    "## Reciprocal rank fusion\nFusion merges ranked lists without scores.")
     answer = ExtractiveProvider(max_sentences=1).complete("", user)
     assert answer == "Fusion merges ranked lists without scores. [1]"
+
+
+def test_extractive_drops_weak_filler_sentences():
+    user = _prompt("How does reciprocal rank fusion combine rankings?",
+                   "Reciprocal rank fusion combines rankings by summing reciprocal ranks.",
+                   "Mean reciprocal rank rewards early hits.",
+                   "BM25 is a ranking function.")
+    answer = ExtractiveProvider().complete("", user)
+    assert answer == "Reciprocal rank fusion combines rankings by summing reciprocal ranks. [1]"
