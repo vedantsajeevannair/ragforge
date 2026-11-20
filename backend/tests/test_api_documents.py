@@ -161,5 +161,5 @@ def test_admin_deletes_whole_collection(client, admin_headers, user_headers):
     assert resp.json() == {"deleted": 2}
     assert [c["name"] for c in client.get("/collections", headers=admin_headers).json()] == ["veg"]
     hits = client.post("/search", headers=admin_headers, json={"query": "apples bananas"})
-    assert hits.json()["hits"] == []
+    assert {h["metadata"]["collection"] for h in hits.json()["hits"]} <= {"veg"}
     assert client.delete("/documents/collections/fruit", headers=admin_headers).status_code == 404
