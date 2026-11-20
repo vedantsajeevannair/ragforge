@@ -67,3 +67,31 @@ def test_factory_builds_openai_compatible():
 def test_factory_rejects_unknown():
     with pytest.raises(ValueError):
         build_llm(Settings(llm_provider="nope"))
+
+
+def _sse_client(lines):
+    body = "\n".join(lines).encode()
+
+    def handler(request):
+        return httpx.Response(200, content=body, headers={"content-type": "text/event-stream"})
+    return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_anthropic_stream_yields_text_deltas():
+    lines = [
+        'event: message_start', 'data: {"type": "message_start"}',
+        'data: {"type": "content_block_delta", "delta": {"type": "text_delta", "text": "Hi"}}',
+        'data: {"type": "content_block_delta", "delta": {"type": "text_delta", "text": " [1]"}}',
+        'data: {"type": "message_stop"}',
+    ]
+    p = AnthropicProvider("k", client=_sse_client(lines))
+    assert "".join(p.stream("s", "u")) == "Hi [1]"
+
+
+def test_openai_stream_stops_at_done():
+    lines = ['data: {"choices": [{"delta": {"content": "a"}}]}',
+             'data: {"choices": [{"delta": {}}]}',
+             'data: {"choices": [{"delta": {"content": "b"}}]}',
+             'data: [DONE]', 'data: {"choices": [{"delta": {"content": "x"}}]}']
+    p = OpenAICompatibleProvider("http://h/v1", "m", client=_sse_client(lines))
+    assert list(p.stream("s", "u")) == ["a", "b"]
