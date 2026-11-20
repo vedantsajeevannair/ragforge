@@ -56,3 +56,16 @@ def test_query_log_history_feedback_summary(db):
         q.set_feedback(first, uid, 5)
     s = q.summary()
     assert s["total"] == 2 and s["grounded_rate"] == 0.5 and s["up"] == 1
+
+
+def test_user_admin_operations(db):
+    users = UserRepository(db)
+    a = users.create("a", "h", "admin")
+    b = users.create("b", "h")
+    assert [u.username for u in users.list()] == ["a", "b"]
+    assert users.set_role(b.id, "admin") and users.admin_count() == 2
+    users.set_password(b.id, "new")
+    assert users.by_id(b.id).password_hash == "new"
+    assert users.delete(b.id) and users.by_id(b.id) is None
+    assert not users.set_role(999, "user")
+    assert a.id == users.list()[0].id

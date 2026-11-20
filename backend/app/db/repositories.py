@@ -92,6 +92,27 @@ class UserRepository:
     def count(self) -> int:
         return self.db.query("SELECT COUNT(*) FROM users")[0][0]
 
+    def list(self) -> list[UserRecord]:
+        rows = self.db.query("SELECT id, username, password_hash, role FROM users ORDER BY id")
+        return [UserRecord(**dict(r)) for r in rows]
+
+    def set_role(self, user_id: int, role: str) -> bool:
+        with self.db.tx() as conn:
+            return conn.execute("UPDATE users SET role = ? WHERE id = ?",
+                                (role, user_id)).rowcount > 0
+
+    def set_password(self, user_id: int, password_hash: str) -> None:
+        with self.db.tx() as conn:
+            conn.execute("UPDATE users SET password_hash = ? WHERE id = ?",
+                         (password_hash, user_id))
+
+    def delete(self, user_id: int) -> bool:
+        with self.db.tx() as conn:
+            return conn.execute("DELETE FROM users WHERE id = ?", (user_id,)).rowcount > 0
+
+    def admin_count(self) -> int:
+        return self.db.query("SELECT COUNT(*) FROM users WHERE role = 'admin'")[0][0]
+
 
 @dataclass
 class QueryRecord:
