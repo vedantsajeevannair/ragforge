@@ -113,3 +113,10 @@ def test_ask_reports_confidence(client, loaded):
     body = client.post("/ask", headers=loaded,
                        json={"query": "What does reciprocal rank fusion merge?"}).json()
     assert 0.5 <= body["confidence"] <= 1.0
+
+
+def test_search_reports_standalone_query_and_timing(client, loaded):
+    body = {"query": "what about its uses?", "previous_questions": ["reciprocal rank fusion"]}
+    resp = client.post("/search", headers=loaded, json=body).json()
+    assert resp["standalone_query"] == "what about its uses? (reciprocal rank fusion)"
+    assert resp["took_ms"] >= 0

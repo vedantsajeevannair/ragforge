@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
@@ -50,9 +51,12 @@ def _standalone(body: SearchRequest) -> str:
 @router.post("/search", response_model=SearchResponse)
 def search(body: SearchRequest, user: UserRecord = Depends(current_user),
            state: AppState = Depends(get_state)) -> SearchResponse:
-    hits = state.kb.search(_standalone(body), _options(body, user))
+    start = time.perf_counter()
     q = _standalone(body)
-    return SearchResponse(query=body.query, hits=[_hit(h, q) for h in hits])
+    hits = state.kb.search(q, _options(body, user))
+    took = (time.perf_counter() - start) * 1000
+    return SearchResponse(query=body.query, standalone_query=q,
+                          hits=[_hit(h, q) for h in hits], took_ms=round(took, 2))
 
 
 def _ask_limit(request: Request, user: UserRecord = Depends(current_user),

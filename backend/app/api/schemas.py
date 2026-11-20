@@ -58,7 +58,9 @@ class HitOut(BaseModel):
 
 class SearchResponse(BaseModel):
     query: str
+    standalone_query: str
     hits: list[HitOut]
+    took_ms: float
 
 
 class CitationOut(BaseModel):
