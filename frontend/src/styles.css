@@ -107,3 +107,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   background: var(--bg);
   color: var(--ink);
 }
+
+mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit;
+  border-radius: 3px; padding: 0 1px; }

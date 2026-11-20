@@ -29,6 +29,7 @@ export interface Hit {
   text: string;
   score: number;
   metadata: Record<string, unknown>;
+  highlights?: Array<[number, number]>;
 }
 
 export interface Citation {

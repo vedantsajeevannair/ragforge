@@ -4,6 +4,7 @@ import { api, askStream } from "../api";
 import { AnswerView } from "../components/AnswerView";
 import { CopyButton } from "../components/CopyButton";
 import { Feedback } from "../components/Feedback";
+import { Highlighted } from "../components/Highlighted";
 import { formatMs } from "../format";
 import type { AskOptions, Citation, Collection, Hit, SearchMode } from "../types";
 
@@ -175,7 +176,9 @@ export function AskPage() {
               <li key={h.chunk_id}>
                 <strong>{String(h.metadata.source ?? h.doc_id)}</strong>{" "}
                 <span className="muted">score {h.score.toFixed(3)}</span>
-                <p className="muted">{h.text.slice(0, 280)}{h.text.length > 280 ? "…" : ""}</p>
+                <p className="muted">
+                  <Highlighted text={h.text} spans={h.highlights} maxLength={280} />
+                </p>
               </li>
             ))}
           </ol>
