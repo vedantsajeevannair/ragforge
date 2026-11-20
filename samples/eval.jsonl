@@ -24,3 +24,17 @@
 {"question": "Why apply metadata filters during the search?", "relevant_sources": ["vector-databases.md"], "expected_phrases": ["fewer than k"]}
 {"question": "Where should the most relevant passages go in the prompt?", "relevant_sources": ["prompting.md"], "expected_phrases": ["first"]}
 {"question": "What temperature suits factual question answering?", "relevant_sources": ["prompting.md"], "expected_phrases": ["0 to 0.2"]}
+{"question": "Which retriever is better at matching exact product codes and names?", "relevant_sources": ["bm25.md"], "expected_phrases": ["exact matches"]}
+{"question": "Why are long documents not favoured just because they have more words?", "relevant_sources": ["bm25.md"], "expected_phrases": ["length normalisation"]}
+{"question": "How can a search find passages that share meaning but no words with the query?", "relevant_sources": ["dense-retrieval.md"], "expected_phrases": ["capture meaning"]}
+{"question": "When is cosine similarity equal to the dot product?", "relevant_sources": ["dense-retrieval.md"], "expected_phrases": ["unit length"]}
+{"question": "Is there a way to merge result lists whose scores are not comparable?", "relevant_sources": ["hybrid-search.md"], "expected_phrases": ["comparable scores"]}
+{"question": "Why split documents into smaller pieces before indexing?", "relevant_sources": ["chunking.md"], "expected_phrases": ["limited length"]}
+{"question": "How do I stop facts that span two pieces of text from getting lost?", "relevant_sources": ["chunking.md"], "expected_phrases": ["overlap"]}
+{"question": "What model reads the question and passage together to score relevance?", "relevant_sources": ["reranking.md"], "expected_phrases": ["cross-encoder"]}
+{"question": "How do I avoid filling the prompt with almost identical passages?", "relevant_sources": ["reranking.md"], "expected_phrases": ["near-duplicate"]}
+{"question": "Why measure the search step and the answer step separately?", "relevant_sources": ["evaluation.md"], "expected_phrases": ["traced"]}
+{"question": "What should I rerun after changing how documents are split?", "relevant_sources": ["evaluation.md"], "expected_phrases": ["labelled question set"]}
+{"question": "Is it better to say I don't know than to guess?", "relevant_sources": ["hallucination.md"], "expected_phrases": ["confident wrong answer"]}
+{"question": "How can I restrict search to documents a user is allowed to see?", "relevant_sources": ["vector-databases.md"], "expected_phrases": ["filters"]}
+{"question": "Does putting the key passage in the middle of a long prompt hurt?", "relevant_sources": ["prompting.md"], "expected_phrases": ["middle"]}
