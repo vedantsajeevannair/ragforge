@@ -30,3 +30,11 @@ def test_html_loader_extracts_visible_text_and_title():
     assert "Hello" in doc.text and "World" in doc.text
     assert "evil" not in doc.text
     assert doc.metadata["title"] == "Guide"
+
+
+def test_pdf_loader_reads_pages(fixtures_dir):
+    doc = load_bytes((fixtures_dir / "sample.pdf").read_bytes(), "sample.pdf")
+    assert doc.metadata["pages"] == 2
+    assert "vector search" in doc.text
+    assert "BM25" in doc.text
+    assert doc.metadata["page_offsets"][0] == 0
