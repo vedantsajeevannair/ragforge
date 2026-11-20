@@ -27,10 +27,17 @@ MetadataFilter = dict[str, Any]
 
 
 def matches(metadata: dict[str, Any], flt: MetadataFilter | None) -> bool:
-    """Exact-match filter; a list value means 'any of'."""
+    """Exact-match filter; a list value means 'any of'.
+
+    The special key "$or" takes a list of sub-filters, at least one of which must match.
+    """
     if not flt:
         return True
     for key, expected in flt.items():
+        if key == "$or":
+            if not any(matches(metadata, sub) for sub in expected):
+                return False
+            continue
         value = metadata.get(key)
         if isinstance(expected, list | tuple | set):
             if value not in expected:
