@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import json
+from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
 import httpx
