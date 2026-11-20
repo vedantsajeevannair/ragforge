@@ -49,3 +49,63 @@ class FixedSizeChunker(Chunker):
                 break
             start += step
         return chunks
+
+
+class RecursiveChunker(Chunker):
+    """Splits on the coarsest separator that keeps pieces under `size`, then merges.
+
+    Tries paragraphs first, then lines, sentences and words, so chunk boundaries
+    tend to fall on natural breaks instead of mid-word.
+    """
+
+    name = "recursive"
+    separators = ("\n\n", "\n", ". ", " ")
+
+    def __init__(self, size: int = 800, overlap: int = 120) -> None:
+        _validate(size, overlap)
+        self.size = size
+        self.overlap = overlap
+
+    def _segments(self, text: str, start: int, level: int) -> list[tuple[int, int]]:
+        if len(text) <= self.size:
+            return [(start, start + len(text))]
+        if level >= len(self.separators):
+            return [(start + i, start + min(i + self.size, len(text)))
+                    for i in range(0, len(text), self.size)]
+        sep = self.separators[level]
+        spans: list[tuple[int, int]] = []
+        pos = 0
+        for part in text.split(sep):
+            end = pos + len(part) + len(sep)
+            end = min(end, len(text))
+            piece = text[pos:end]
+            if len(piece) > self.size:
+                spans.extend(self._segments(piece, start + pos, level + 1))
+            elif piece:
+                spans.append((start + pos, start + end))
+            pos = end
+        return spans
+
+    def split(self, document: Document) -> list[Chunk]:
+        text = document.text
+        spans = self._segments(text, 0, 0)
+        merged: list[tuple[int, int]] = []
+        cur_start, cur_end = None, None
+        for s, e in spans:
+            if cur_start is None:
+                cur_start, cur_end = s, e
+            elif e - cur_start <= self.size:
+                cur_end = e
+            else:
+                merged.append((cur_start, cur_end))
+                back = max(cur_end - self.overlap, cur_start)
+                cur_start = back if e - back <= self.size else s
+                cur_end = e
+        if cur_start is not None:
+            merged.append((cur_start, cur_end))
+        chunks = []
+        for s, e in merged:
+            if text[s:e].strip():
+                chunks.append(Chunk(text[s:e], document.doc_id, len(chunks), s, e,
+                                    dict(document.metadata)))
+        return chunks
