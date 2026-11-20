@@ -1,0 +1,26 @@
+{"question": "What does the k1 parameter control in BM25?", "relevant_sources": ["bm25.md"], "expected_phrases": ["saturation"]}
+{"question": "Why does BM25 struggle with synonyms?", "relevant_sources": ["bm25.md"], "expected_phrases": ["different words"]}
+{"question": "What are typical default values for k1 and b?", "relevant_sources": ["bm25.md"], "expected_phrases": ["1.5"]}
+{"question": "How are passages ranked in dense retrieval?", "relevant_sources": ["dense-retrieval.md"], "expected_phrases": ["vector similarity"]}
+{"question": "Can semantic search match automobile maintenance prices to car repair costs?", "relevant_sources": ["dense-retrieval.md"], "expected_phrases": []}
+{"question": "What do dense models miss?", "relevant_sources": ["dense-retrieval.md"], "expected_phrases": ["identifiers"]}
+{"question": "How does reciprocal rank fusion combine rankings?", "relevant_sources": ["hybrid-search.md"], "expected_phrases": ["1 / (k + rank)"]}
+{"question": "What value of k is usually used in RRF?", "relevant_sources": ["hybrid-search.md"], "expected_phrases": ["60"]}
+{"question": "Why combine lexical and semantic retrieval?", "relevant_sources": ["hybrid-search.md"], "expected_phrases": ["paraphrases"]}
+{"question": "What is the downside of fixed-size chunking?", "relevant_sources": ["chunking.md"], "expected_phrases": ["sentences in half"]}
+{"question": "How much overlap should chunks have?", "relevant_sources": ["chunking.md"], "expected_phrases": ["10 to 20 percent"]}
+{"question": "Which separators does recursive chunking try first?", "relevant_sources": ["chunking.md"], "expected_phrases": ["paragraph"]}
+{"question": "Why store the heading path with Markdown chunks?", "relevant_sources": ["chunking.md"], "expected_phrases": []}
+{"question": "Why are cross-encoders only applied to top candidates?", "relevant_sources": ["reranking.md"], "expected_phrases": ["too slow"]}
+{"question": "What does a lambda of 1.0 mean in MMR?", "relevant_sources": ["reranking.md"], "expected_phrases": ["pure relevance"]}
+{"question": "How does maximal marginal relevance avoid near-duplicate chunks?", "relevant_sources": ["reranking.md"], "expected_phrases": []}
+{"question": "What does recall@k measure?", "relevant_sources": ["evaluation.md"], "expected_phrases": ["top k"]}
+{"question": "What does mean reciprocal rank reward?", "relevant_sources": ["evaluation.md"], "expected_phrases": ["near the top"]}
+{"question": "What is citation precision?", "relevant_sources": ["evaluation.md"], "expected_phrases": []}
+{"question": "What should the system do when no passage is relevant enough?", "relevant_sources": ["hallucination.md"], "expected_phrases": ["refuse"]}
+{"question": "Why ask the model to cite passage numbers?", "relevant_sources": ["hallucination.md"], "expected_phrases": ["checked"]}
+{"question": "When is brute-force vector search good enough?", "relevant_sources": ["vector-databases.md"], "expected_phrases": ["few hundred thousand"]}
+{"question": "What does HNSW trade for lower latency?", "relevant_sources": ["vector-databases.md"], "expected_phrases": ["recall"]}
+{"question": "Why apply metadata filters during the search?", "relevant_sources": ["vector-databases.md"], "expected_phrases": ["fewer than k"]}
+{"question": "Where should the most relevant passages go in the prompt?", "relevant_sources": ["prompting.md"], "expected_phrases": ["first"]}
+{"question": "What temperature suits factual question answering?", "relevant_sources": ["prompting.md"], "expected_phrases": ["0 to 0.2"]}
