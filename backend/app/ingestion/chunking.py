@@ -154,3 +154,45 @@ class SentenceChunker(Chunker):
                 break
             i = max(j + 1 - self.overlap_sentences, i + 1)
         return chunks
+
+
+_HEADING = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
+
+
+class MarkdownChunker(Chunker):
+    """Splits Markdown by headings and records the heading path on each chunk.
+
+    Sections longer than `size` are split further with RecursiveChunker.
+    """
+
+    name = "markdown"
+
+    def __init__(self, size: int = 800, overlap: int = 120) -> None:
+        _validate(size, overlap)
+        self.size = size
+        self.inner = RecursiveChunker(size, overlap)
+
+    def split(self, document: Document) -> list[Chunk]:
+        text = document.text
+        heads = list(_HEADING.finditer(text))
+        bounds = [0] + [m.start() for m in heads] + [len(text)]
+        path: list[tuple[int, str]] = []
+        chunks: list[Chunk] = []
+        head_iter = iter(heads)
+        for k in range(len(bounds) - 1):
+            s, e = bounds[k], bounds[k + 1]
+            if k > 0:
+                m = next(head_iter)
+                level = len(m.group(1))
+                path = [p for p in path if p[0] < level] + [(level, m.group(2).strip())]
+            section = text[s:e]
+            if not section.strip():
+                continue
+            meta = dict(document.metadata)
+            if path:
+                meta["section"] = " > ".join(title for _, title in path)
+            sub = Document(section, document.source, meta)
+            for piece in self.inner.split(sub):
+                chunks.append(Chunk(piece.text, document.doc_id, len(chunks),
+                                    s + piece.start, s + piece.end, meta))
+        return chunks
