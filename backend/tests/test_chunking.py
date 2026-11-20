@@ -55,3 +55,19 @@ def test_recursive_chunker_covers_whole_text():
     text = "x" * 333
     chunks = RecursiveChunker(size=100, overlap=0).split(Document(text=text, source="s"))
     assert "".join(c.text for c in chunks) == text
+
+
+from app.ingestion.chunking import SentenceChunker, split_sentences  # noqa: E402
+
+
+def test_split_sentences_spans():
+    text = "First one. Second one! Third? yes"
+    parts = [text[s:e] for s, e in split_sentences(text)]
+    assert parts == ["First one.", "Second one!", "Third? yes"]
+
+
+def test_sentence_chunker_keeps_sentences_whole_with_overlap():
+    text = "Alpha is first. Beta is second. Gamma is third. Delta is fourth."
+    chunks = SentenceChunker(size=35, overlap_sentences=1).split(Document(text=text, source="s"))
+    assert chunks[0].text == "Alpha is first. Beta is second."
+    assert chunks[1].text.startswith("Beta is second.")
