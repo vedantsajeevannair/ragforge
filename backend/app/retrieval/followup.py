@@ -12,7 +12,8 @@ import re
 from app.text.tokenize import STOPWORDS, tokenize
 
 _FOLLOWUP_CUES = re.compile(
-    r"\b(it|its|this|that|these|those|they|them|their|he|she|one|ones)\b|^(and|what about|how about|why|also)\b",
+    r"\b(it|its|this|that|these|those|they|them|their|he|she|one|ones)\b"
+    r"|^(and|what about|how about|why|also)\b",
     re.IGNORECASE,
 )
 _QUESTION_WORDS = {"what", "how", "why", "when", "where", "which", "who", "does", "do", "can",
