@@ -36,5 +36,5 @@ def test_bm25_filter():
 
 def test_bm25_rebuild_resets_stats():
     idx = _index()
-    idx.rebuild([StoredChunk("x", "d", "only one")])
+    idx.rebuild([StoredChunk("x", "d", "single")])
     assert len(idx) == 1 and idx.avg_length == 1
