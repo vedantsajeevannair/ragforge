@@ -14,6 +14,7 @@ from app.db.repositories import DocumentRepository, QueryRepository, UserReposit
 from app.embeddings.factory import build_embedder
 from app.generation.answer import AnswerEngine
 from app.generation.factory import build_llm
+from app.retrieval.query import load_synonyms
 from app.vectorstore.memory import InMemoryVectorStore
 from app.vectorstore.persistent import PersistentVectorStore
 
@@ -45,7 +46,7 @@ def build_state(settings: Settings, in_memory: bool = False) -> AppState:
         store = PersistentVectorStore(embedder.dim, settings.data_dir / "index")
         files = FileStore(settings.data_dir / "files")
     kb = KnowledgeBase(embedder, store, settings.contextual_headers,
-                       settings.effective_dense_weight)
+                       settings.effective_dense_weight, load_synonyms(settings.synonyms_file))
     return AppState(
         settings=settings,
         db=db,

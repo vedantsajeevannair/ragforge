@@ -41,7 +41,8 @@ def chunk_header(metadata: dict) -> str:
 
 class KnowledgeBase:
     def __init__(self, embedder: Embedder, store: VectorStore,
-                 contextual_headers: bool = False, dense_weight: float = 1.0) -> None:
+                 contextual_headers: bool = False, dense_weight: float = 1.0,
+                 synonyms: dict[str, list[str]] | None = None) -> None:
         self.embedder = embedder
         self.store = store
         # Index each chunk together with its file/section header so short chunks keep
@@ -50,6 +51,7 @@ class KnowledgeBase:
         # sample benchmark it lowered BM25 hit@1 from 0.923 to 0.885 and did not help
         # the other configurations (see docs/evaluation.md).
         self.contextual_headers = contextual_headers
+        self.synonyms = synonyms
         self.bm25 = BM25Index(text_fn=self._index_text)
         self.bm25.add(store.all_chunks())
         self._lock = threading.RLock()
@@ -102,7 +104,7 @@ class KnowledgeBase:
         q = normalize_query(query)
         if not q:
             return []
-        q_search = expand_query(q) if opts.expand else q
+        q_search = expand_query(q, self.synonyms) if opts.expand else q
         pool = opts.k * 3 if (opts.use_mmr or opts.use_rerank) else opts.k
         with self._lock:
             hits = self._retrievers[opts.mode].retrieve(q_search, pool, opts.flt)

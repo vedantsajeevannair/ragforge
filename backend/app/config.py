@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     chunk_overlap: int = 120
     top_k: int = 5
     contextual_headers: bool = False
+    synonyms_file: Path | None = None
     # Weight of the dense ranking in hybrid fusion (BM25 is 1.0). Unset means 0.5 for the
     # offline hashing embedder, which is weaker than BM25, and 1.0 for real embedding models.
     dense_weight: float | None = None
