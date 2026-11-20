@@ -86,6 +86,7 @@ export function DocumentsPage() {
         {loading ? <p className="muted">Loading…</p> : shown.length === 0 ? (
           <p className="muted">No documents yet. Upload some to start asking questions.</p>
         ) : (
+          <div className="table-wrap">
           <table>
             <thead>
               <tr>
@@ -97,7 +98,7 @@ export function DocumentsPage() {
               {shown.map((d) => (
                 <tr key={d.doc_id}>
                   <td>
-                    <button type="button" className="btn ghost" onClick={() => showChunks(d)}>
+                    <button type="button" className="link" onClick={() => showChunks(d)}>
                       {d.title || d.filename}
                     </button>
                     {d.visibility === "private" && <span className="badge">private</span>}
@@ -126,6 +127,7 @@ export function DocumentsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
       {preview && (
