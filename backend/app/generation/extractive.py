@@ -12,9 +12,15 @@ from app.generation.providers import LLMProvider
 from app.ingestion.chunking import split_sentences
 from app.text.tokenize import terms
 
+_HEADING_LINE = re.compile(r"^\s{0,3}#{1,6}\s+.*$", re.MULTILINE)
 _BLOCK = re.compile(r"^\[(\d+)\] Source: [^\n]*\n(.*?)(?=\n\n\[\d+\] Source: |\Z)",
                     re.MULTILINE | re.DOTALL)
 NOT_FOUND = "I could not find an answer to that in the documents."
+
+
+def _strip_headings(text: str) -> str:
+    """Drop Markdown heading lines so they are not glued onto the next sentence."""
+    return _HEADING_LINE.sub("", text)
 
 
 def _parse_prompt(user: str) -> tuple[list[tuple[int, str]], str]:
@@ -37,6 +43,7 @@ class ExtractiveProvider(LLMProvider):
             return NOT_FOUND
         scored = []
         for rank, (num, text) in enumerate(blocks):
+            text = _strip_headings(text)
             for s, e in split_sentences(text):
                 sentence = " ".join(text[s:e].split())
                 s_terms = set(terms(sentence))

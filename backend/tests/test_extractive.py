@@ -30,3 +30,10 @@ def test_extractive_returns_not_found():
 def test_extractive_dedupes_sentences():
     user = _prompt("vector search", "Vector search is fast.", "Vector search is fast.")
     assert ExtractiveProvider().complete("", user).count("Vector search is fast.") == 1
+
+
+def test_extractive_does_not_quote_markdown_headings():
+    user = _prompt("How does fusion merge lists?",
+                   "## Reciprocal rank fusion\nFusion merges ranked lists without scores.")
+    answer = ExtractiveProvider(max_sentences=1).complete("", user)
+    assert answer == "Fusion merges ranked lists without scores. [1]"
