@@ -1,0 +1,30 @@
+"""Application settings loaded from environment variables."""
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="RAGFORGE_", env_file=".env", extra="ignore")
+
+    app_name: str = "RAGForge"
+    data_dir: Path = Path("data")
+    chunk_size: int = 800
+    chunk_overlap: int = 120
+    top_k: int = 5
+    embedding_dim: int = 512
+    llm_provider: str = "extractive"
+    llm_model: str = ""
+    llm_api_key: str = ""
+    llm_base_url: str = ""
+    jwt_secret: str = "change-me-in-production"
+    jwt_expiry_minutes: int = 60 * 12
+    max_upload_mb: int = 20
+    cors_origins: list[str] = ["http://localhost:5173"]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
