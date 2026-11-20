@@ -12,8 +12,8 @@ from app.api.schemas import (
     AskResponse,
     CitationOut,
     FeedbackRequest,
-    HitOut,
     HistoryItem,
+    HitOut,
     SearchRequest,
     SearchResponse,
 )
