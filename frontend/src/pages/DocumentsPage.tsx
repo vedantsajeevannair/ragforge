@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
 import { EditDocument } from "../components/EditDocument";
+import { useToast } from "../components/Toasts";
 import { UploadPanel } from "../components/UploadPanel";
 import { formatBytes, formatDate } from "../format";
 import type { DocumentInfo, Hit } from "../types";
 
 export function DocumentsPage() {
+  const toast = useToast();
   const [docs, setDocs] = useState<DocumentInfo[]>([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -34,6 +36,7 @@ export function DocumentsPage() {
     try {
       await api.deleteDocument(doc.doc_id);
       setDocs((d) => d.filter((x) => x.doc_id !== doc.doc_id));
+      toast(`Deleted ${doc.filename}`);
       if (preview?.doc.doc_id === doc.doc_id) setPreview(null);
     } catch (err) {
       setError((err as Error).message);
@@ -51,14 +54,17 @@ export function DocumentsPage() {
   return (
     <section>
       <h2>Documents</h2>
-      <UploadPanel onUploaded={(doc) =>
-        setDocs((d) => [doc, ...d.filter((x) => x.doc_id !== doc.doc_id)])} />
+      <UploadPanel onUploaded={(doc) => {
+        setDocs((d) => [doc, ...d.filter((x) => x.doc_id !== doc.doc_id)]);
+        toast(`Indexed ${doc.filename}: ${doc.chunk_count} chunks`);
+      }} />
       {error && <p className="error" role="alert">{error}</p>}
       {editing && (
         <EditDocument doc={editing} onCancel={() => setEditing(null)}
           onSaved={(doc) => {
             setDocs((list) => list.map((x) => (x.doc_id === doc.doc_id ? doc : x)));
             setEditing(null);
+            toast(`Saved ${doc.filename}`);
           }} />
       )}
       <div className="panel">
