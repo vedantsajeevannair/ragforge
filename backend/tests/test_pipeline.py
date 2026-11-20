@@ -20,3 +20,12 @@ def test_ingest_pdf_assigns_pages(fixtures_dir):
 def test_ingest_respects_explicit_strategy():
     result = ingest_bytes(b"a" * 50, "x.txt", chunk_size=20, chunk_overlap=0, strategy="fixed")
     assert len(result.chunks) == 3
+
+
+def test_duplicate_chunks_are_dropped_and_renumbered():
+    page = "Confidential - Acme Corp\n\n"
+    text = (page + "Unique paragraph one.\n\n" + page + "Unique paragraph two.").encode()
+    result = ingest_bytes(text, "x.txt", chunk_size=30, chunk_overlap=0, strategy="recursive")
+    texts = [c.text.strip() for c in result.chunks]
+    assert texts.count("Confidential - Acme Corp") == 1
+    assert [c.index for c in result.chunks] == list(range(len(result.chunks)))

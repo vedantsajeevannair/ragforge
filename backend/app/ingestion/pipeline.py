@@ -17,6 +17,25 @@ class IngestResult:
     chunks: list[Chunk]
 
 
+def _fingerprint(text: str) -> str:
+    return " ".join(text.lower().split())
+
+
+def drop_duplicate_chunks(chunks: list[Chunk]) -> list[Chunk]:
+    """Remove chunks whose normalised text repeats an earlier chunk (boilerplate,
+    repeated headers/footers in PDFs) and renumber the rest."""
+    seen: set[str] = set()
+    kept: list[Chunk] = []
+    for chunk in chunks:
+        key = _fingerprint(chunk.text)
+        if key in seen:
+            continue
+        seen.add(key)
+        chunk.index = len(kept)
+        kept.append(chunk)
+    return kept
+
+
 def default_strategy(document: Document) -> str:
     return "markdown" if document.metadata.get("type") == "markdown" else "recursive"
 
@@ -43,6 +62,6 @@ def ingest_bytes(
         text = clean_text(raw.text)
     document = Document(text=text, source=raw.source, metadata=raw.metadata)
     chunker = get_chunker(strategy or default_strategy(document), chunk_size, chunk_overlap)
-    chunks = assign_pages(chunker.split(document))
+    chunks = drop_duplicate_chunks(assign_pages(chunker.split(document)))
     document.metadata.pop("page_offsets", None)
     return IngestResult(document=document, chunks=chunks)
