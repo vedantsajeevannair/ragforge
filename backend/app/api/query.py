@@ -23,6 +23,7 @@ from app.core.knowledge_base import SearchOptions
 from app.db.repositories import UserRecord
 from app.generation.providers import LLMError
 from app.retrieval.followup import condense_question
+from app.retrieval.highlight import highlight_spans
 from app.vectorstore.base import SearchHit
 
 router = APIRouter(tags=["query"])
@@ -35,9 +36,10 @@ def _options(body: SearchRequest) -> SearchOptions:
     )
 
 
-def _hit(h: SearchHit) -> HitOut:
+def _hit(h: SearchHit, query: str = "") -> HitOut:
     return HitOut(chunk_id=h.chunk.chunk_id, doc_id=h.chunk.doc_id, text=h.chunk.text,
-                  score=round(h.score, 6), metadata=h.chunk.metadata)
+                  score=round(h.score, 6), metadata=h.chunk.metadata,
+                  highlights=highlight_spans(query, h.chunk.text) if query else [])
 
 
 def _standalone(body: SearchRequest) -> str:
@@ -48,7 +50,8 @@ def _standalone(body: SearchRequest) -> str:
 def search(body: SearchRequest, _: UserRecord = Depends(current_user),
            state: AppState = Depends(get_state)) -> SearchResponse:
     hits = state.kb.search(_standalone(body), _options(body))
-    return SearchResponse(query=body.query, hits=[_hit(h) for h in hits])
+    q = _standalone(body)
+    return SearchResponse(query=body.query, hits=[_hit(h, q) for h in hits])
 
 
 def _ask_limit(request: Request, user: UserRecord = Depends(current_user),
@@ -81,7 +84,7 @@ def ask(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
         answer=ans.answer,
         grounded=ans.grounded,
         citations=citations,
-        hits=[_hit(h) for h in ans.hits],
+        hits=[_hit(h, ans.question) for h in ans.hits],
         timings_ms={k: round(v, 2) for k, v in ans.timings_ms.items()},
     )
 
@@ -118,7 +121,8 @@ def ask_stream(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
         try:
             for ev in state.engine.stream(_standalone(body), _options(body)):
                 if ev["type"] == "sources":
-                    yield _sse("sources", {"hits": [_hit(h).model_dump() for h in ev["hits"]]})
+                    q = _standalone(body)
+                    yield _sse("sources", {"hits": [_hit(h, q).model_dump() for h in ev["hits"]]})
                 elif ev["type"] == "token":
                     yield _sse("token", {"text": ev["text"]})
                 else:

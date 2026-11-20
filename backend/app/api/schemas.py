@@ -51,6 +51,7 @@ class HitOut(BaseModel):
     text: str
     score: float
     metadata: dict[str, Any]
+    highlights: list[tuple[int, int]] = Field(default_factory=list)
 
 
 class SearchResponse(BaseModel):

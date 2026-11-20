@@ -100,3 +100,10 @@ def test_followup_uses_previous_question(client, loaded):
             "previous_questions": ["Tell me about reciprocal rank fusion"]}
     hits = client.post("/search", headers=loaded, json=body).json()["hits"]
     assert hits[0]["metadata"]["source"] == "fusion.md"
+
+
+def test_search_returns_highlight_spans(client, loaded):
+    hit = client.post("/search", headers=loaded, json={"query": "fusion", "k": 1}).json()["hits"][0]
+    assert hit["highlights"]
+    s, e = hit["highlights"][0]
+    assert hit["text"][s:e].lower() == "fusion"
