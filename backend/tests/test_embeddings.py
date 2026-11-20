@@ -66,3 +66,22 @@ def test_http_embedder_rejects_wrong_dim():
 def test_http_embedder_empty_input():
     e = HTTPEmbedder("http://x/v1", "m", dim=8, client=_mock_client(8, []))
     assert e.embed([]).shape == (0, 8)
+
+
+from app.embeddings.cache import CachedEmbedder  # noqa: E402
+
+
+def test_cached_embedder_counts_hits_and_matches_inner():
+    inner = HashingEmbedder(dim=32)
+    cached = CachedEmbedder(inner, max_items=10)
+    first = cached.embed(["a b", "c d"])
+    second = cached.embed(["a b"])
+    assert cached.misses == 2 and cached.hits == 1
+    assert np.array_equal(first[0], second[0])
+    assert np.array_equal(first[1], inner.embed_one("c d"))
+
+
+def test_cached_embedder_evicts_oldest():
+    cached = CachedEmbedder(HashingEmbedder(dim=16), max_items=2)
+    cached.embed(["one"]); cached.embed(["two"]); cached.embed(["three"])
+    assert "one" not in cached._cache
