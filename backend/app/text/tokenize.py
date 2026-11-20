@@ -17,7 +17,7 @@ def tokenize(text: str) -> list[str]:
 
 def stem(token: str) -> str:
     """Tiny suffix stripper: good enough to match plural and -ing/-ed forms."""
-    for suffix in ("ingly", "edly", "ing", "ies", "ed", "es", "s"):
+    for suffix in ("ingly", "edly", "ings", "ing", "ies", "ed", "es", "s"):
         if token.endswith(suffix) and len(token) - len(suffix) >= 3:
             if suffix == "ies":
                 return token[: -len(suffix)] + "y"
