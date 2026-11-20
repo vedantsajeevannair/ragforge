@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { api, askStream } from "../api";
 import { AnswerView } from "../components/AnswerView";
+import { CopyButton } from "../components/CopyButton";
 import { Feedback } from "../components/Feedback";
 import { formatMs } from "../format";
 import type { AskOptions, Citation, Collection, Hit, SearchMode } from "../types";
@@ -21,6 +22,11 @@ interface Result {
   grounded: boolean | null;
   queryId: number | null;
   timings: Record<string, number>;
+}
+
+function withSources(answer: string, citations: Citation[]): string {
+  if (!citations.length) return answer;
+  return `${answer}\n\nSources:\n${citations.map((c) => `[${c.number}] ${c.source}`).join("\n")}`;
 }
 
 const EMPTY: Result = { answer: "", citations: [], hits: [], grounded: null, queryId: null,
@@ -153,7 +159,12 @@ export function AskPage() {
             )}
           </div>
           <AnswerView answer={result.answer} citations={result.citations} streaming={streaming} />
-          {result.queryId !== null && <Feedback queryId={result.queryId} />}
+          {result.queryId !== null && (
+            <div className="row">
+              <Feedback queryId={result.queryId} />
+              <CopyButton text={withSources(result.answer, result.citations)} />
+            </div>
+          )}
         </div>
       )}
       {result.hits.length > 0 && (
