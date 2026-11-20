@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { useAuth } from "./auth";
+import { AccountPage } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { AskPage } from "./pages/AskPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { LoginPage } from "./pages/LoginPage";
 
-type Page = "ask" | "documents" | "history" | "admin";
+type Page = "ask" | "documents" | "history" | "account" | "admin";
 
 const PAGES: Array<{ id: Page; label: string; admin?: boolean }> = [
   { id: "ask", label: "Ask" },
   { id: "documents", label: "Documents" },
   { id: "history", label: "History" },
+  { id: "account", label: "Account" },
   { id: "admin", label: "Admin", admin: true },
 ];
 
@@ -46,6 +48,7 @@ export function App() {
         {page === "ask" && <AskPage />}
         {page === "documents" && <DocumentsPage />}
         {page === "history" && <HistoryPage />}
+        {page === "account" && <AccountPage />}
         {page === "admin" && <AdminPage />}
       </main>
     </div>
