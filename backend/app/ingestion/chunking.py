@@ -196,3 +196,20 @@ class MarkdownChunker(Chunker):
                 chunks.append(Chunk(piece.text, document.doc_id, len(chunks),
                                     s + piece.start, s + piece.end, meta))
         return chunks
+
+
+CHUNKERS: dict[str, type[Chunker]] = {
+    FixedSizeChunker.name: FixedSizeChunker,
+    RecursiveChunker.name: RecursiveChunker,
+    SentenceChunker.name: SentenceChunker,
+    MarkdownChunker.name: MarkdownChunker,
+}
+
+
+def get_chunker(name: str, size: int, overlap: int) -> Chunker:
+    """Build a chunker by name. Sentence chunker treats overlap as a sentence count."""
+    if name not in CHUNKERS:
+        raise ValueError(f"unknown chunker '{name}', choose from {sorted(CHUNKERS)}")
+    if name == SentenceChunker.name:
+        return SentenceChunker(size, overlap_sentences=1 if overlap else 0)
+    return CHUNKERS[name](size, overlap)
