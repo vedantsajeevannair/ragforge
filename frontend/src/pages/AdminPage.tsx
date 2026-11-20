@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { useAuth } from "../auth";
+import { UserTable } from "../components/UserTable";
 import { formatMs } from "../format";
 import type { Stats } from "../types";
 
 export function AdminPage() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +41,7 @@ export function AdminPage() {
           </div>
         ))}
       </div>
+      {user && <UserTable currentUserId={user.id} />}
     </section>
   );
 }
