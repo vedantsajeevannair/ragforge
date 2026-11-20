@@ -9,6 +9,7 @@ from app.generation.prompt import source_label
 from app.vectorstore.base import SearchHit
 
 _MARKER = re.compile(r"\[(\d{1,3})\]")
+_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+.*\n?", re.MULTILINE)
 
 
 @dataclass
@@ -36,7 +37,7 @@ def resolve_citations(answer: str, hits: list[SearchHit],
     for n in cited_numbers(answer):
         if 1 <= n <= len(hits):
             hit = hits[n - 1]
-            text = hit.chunk.text.strip()
+            text = _HEADING.sub("", hit.chunk.text).strip()
             snippet = text if len(text) <= snippet_chars else text[:snippet_chars].rstrip() + "…"
             out.append(Citation(n, hit.chunk.chunk_id, hit.chunk.doc_id, source_label(hit),
                                 snippet))

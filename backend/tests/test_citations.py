@@ -22,3 +22,8 @@ def test_snippet_is_truncated():
 
 def test_strip_invalid_markers():
     assert strip_invalid_markers("ok [1] bad [9]", 2) == "ok [1] bad "
+
+
+def test_snippet_drops_markdown_headings():
+    hits = [SearchHit(StoredChunk("x", "d", "## Title\nBody text.", {}), 1.0)]
+    assert resolve_citations("[1]", hits)[0].snippet == "Body text."
