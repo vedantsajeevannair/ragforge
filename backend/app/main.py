@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from app import __version__
-from app.api import auth, documents, meta, query, users
+from app.api import auth, documents, meta, metrics, query, users
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.api.state import build_state
@@ -36,6 +36,8 @@ def create_app(settings: Settings | None = None, in_memory: bool = False) -> Fas
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.state.metrics = metrics.Metrics()
+    app.add_middleware(metrics.MetricsMiddleware, metrics=app.state.metrics)
     app.add_middleware(RequestContextMiddleware)
     install_error_handlers(app)
     app.include_router(auth.router)
@@ -43,6 +45,7 @@ def create_app(settings: Settings | None = None, in_memory: bool = False) -> Fas
     app.include_router(query.router)
     app.include_router(meta.router)
     app.include_router(users.router)
+    app.include_router(metrics.router)
 
     @app.get("/", include_in_schema=False)
     def root() -> RedirectResponse:
