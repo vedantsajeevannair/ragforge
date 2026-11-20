@@ -9,6 +9,24 @@ export function AdminPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reindexing, setReindexing] = useState(false);
+  const [reindexMsg, setReindexMsg] = useState<string | null>(null);
+
+  async function reindex() {
+    if (!window.confirm("Re-chunk and re-embed every document with the current settings?")) return;
+    setReindexing(true);
+    setReindexMsg(null);
+    try {
+      const r = await api.reindex();
+      setReindexMsg(`Re-indexed ${r.reindexed} documents` +
+        (r.skipped.length ? `; skipped ${r.skipped.join(", ")} (no original file)` : ""));
+      setStats(await api.stats());
+    } catch (e) {
+      setReindexMsg((e as Error).message);
+    } finally {
+      setReindexing(false);
+    }
+  }
 
   useEffect(() => {
     api.stats().then(setStats).catch((e: Error) => setError(e.message));
@@ -40,6 +58,15 @@ export function AdminPage() {
             <div className="label">{label}</div>
           </div>
         ))}
+      </div>
+      <div className="panel row" style={{ marginTop: 16, justifyContent: "space-between" }}>
+        <span className="muted">
+          Re-index after changing chunk size, overlap or the embedding model.
+        </span>
+        <button type="button" className="btn ghost" disabled={reindexing} onClick={reindex}>
+          {reindexing ? "Re-indexing…" : "Re-index all documents"}
+        </button>
+        {reindexMsg && <p className="muted" role="status">{reindexMsg}</p>}
       </div>
       {user && <UserTable currentUserId={user.id} />}
     </section>
