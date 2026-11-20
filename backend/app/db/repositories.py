@@ -91,3 +91,55 @@ class UserRepository:
 
     def count(self) -> int:
         return self.db.query("SELECT COUNT(*) FROM users")[0][0]
+
+
+@dataclass
+class QueryRecord:
+    id: int
+    user_id: int | None
+    question: str
+    answer: str
+    grounded: bool
+    mode: str
+    citations_json: str
+    retrieval_ms: float | None
+    generation_ms: float | None
+    feedback: int | None
+    created_at: str
+
+
+class QueryRepository:
+    def __init__(self, db: Database) -> None:
+        self.db = db
+
+    def log(self, user_id: int, question: str, answer: str, grounded: bool, mode: str,
+            citations_json: str, retrieval_ms: float, generation_ms: float) -> int:
+        with self.db.tx() as conn:
+            cur = conn.execute(
+                """INSERT INTO queries(user_id, question, answer, grounded, mode, citations_json,
+                       retrieval_ms, generation_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, question, answer, int(grounded), mode, citations_json,
+                 retrieval_ms, generation_ms),
+            )
+        return cur.lastrowid
+
+    def for_user(self, user_id: int, limit: int = 50) -> list[QueryRecord]:
+        rows = self.db.query("SELECT * FROM queries WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+                             (user_id, limit))
+        return [QueryRecord(**{**dict(r), "grounded": bool(r["grounded"])}) for r in rows]
+
+    def set_feedback(self, query_id: int, user_id: int, value: int) -> bool:
+        if value not in (-1, 1):
+            raise ValueError("feedback must be -1 or 1")
+        with self.db.tx() as conn:
+            cur = conn.execute("UPDATE queries SET feedback = ? WHERE id = ? AND user_id = ?",
+                               (value, query_id, user_id))
+        return cur.rowcount > 0
+
+    def summary(self) -> dict[str, float]:
+        row = self.db.query(
+            """SELECT COUNT(*) AS total, AVG(grounded) AS grounded_rate,
+                      AVG(retrieval_ms) AS retrieval_ms, AVG(generation_ms) AS generation_ms,
+                      SUM(feedback = 1) AS up, SUM(feedback = -1) AS down FROM queries"""
+        )[0]
+        return {k: (row[k] or 0) for k in row.keys()}

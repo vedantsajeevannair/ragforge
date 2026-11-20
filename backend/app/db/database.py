@@ -30,6 +30,22 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX idx_documents_collection ON documents(collection);
     """,
+    """
+    CREATE TABLE queries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        grounded INTEGER NOT NULL,
+        mode TEXT NOT NULL,
+        citations_json TEXT NOT NULL DEFAULT '[]',
+        retrieval_ms REAL,
+        generation_ms REAL,
+        feedback INTEGER,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX idx_queries_user ON queries(user_id, created_at);
+    """,
 ]
 
 
