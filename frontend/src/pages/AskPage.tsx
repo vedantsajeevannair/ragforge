@@ -6,6 +6,14 @@ import { Feedback } from "../components/Feedback";
 import { formatMs } from "../format";
 import type { AskOptions, Citation, Collection, Hit, SearchMode } from "../types";
 
+interface Turn {
+  question: string;
+  answer: string;
+  citations: Citation[];
+  grounded: boolean | null;
+  queryId: number | null;
+}
+
 interface Result {
   answer: string;
   citations: Citation[];
@@ -26,6 +34,8 @@ export function AskPage() {
   const [useMmr, setUseMmr] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [result, setResult] = useState<Result>(EMPTY);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [asked, setAsked] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -41,11 +51,18 @@ export function AskPage() {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    if (result.answer && asked) {
+      setTurns((t) => [...t, { question: asked, answer: result.answer,
+        citations: result.citations, grounded: result.grounded, queryId: result.queryId }]);
+    }
+    const previous = [...turns.map((t) => t.question), ...(asked ? [asked] : [])].slice(-5);
+    setAsked(question);
+    setQuestion("");
     setResult(EMPTY);
     setError(null);
     setStreaming(true);
     const opts: AskOptions = { k, mode, use_mmr: useMmr, use_rerank: true,
-      ...(collection ? { collection } : {}) };
+      previous_questions: previous, ...(collection ? { collection } : {}) };
     try {
       await askStream(question, opts, (ev) => {
         if (ev.event === "sources") setResult((r) => ({ ...r, hits: ev.data.hits }));
@@ -101,9 +118,27 @@ export function AskPage() {
           </button>
         </div>
       </form>
+      {(turns.length > 0 || asked) && (
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <span className="muted">
+            Conversation: follow-up questions use the earlier ones for context.
+          </span>
+          <button type="button" className="btn ghost" disabled={streaming}
+            onClick={() => { setTurns([]); setAsked(""); setResult(EMPTY); }}>
+            New conversation
+          </button>
+        </div>
+      )}
+      {turns.map((t, i) => (
+        <div key={i} className="panel turn">
+          <p><strong>{t.question}</strong></p>
+          <AnswerView answer={t.answer} citations={t.citations} />
+        </div>
+      ))}
       {error && <p className="error" role="alert">{error}</p>}
       {(result.answer || streaming) && (
         <div className="panel">
+          {asked && <p><strong>{asked}</strong></p>}
           <div className="row" style={{ justifyContent: "space-between" }}>
             {result.grounded === null ? <span className="muted">Generating…</span> : (
               <span className={`badge ${result.grounded ? "ok" : "warn"}`}>
