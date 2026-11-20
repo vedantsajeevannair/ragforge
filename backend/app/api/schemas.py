@@ -74,6 +74,7 @@ class AskResponse(BaseModel):
     question: str
     answer: str
     grounded: bool
+    confidence: float
     citations: list[CitationOut]
     hits: list[HitOut]
     timings_ms: dict[str, float]

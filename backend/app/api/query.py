@@ -84,6 +84,7 @@ def ask(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
         question=ans.question,
         answer=ans.answer,
         grounded=ans.grounded,
+        confidence=ans.confidence,
         citations=citations,
         hits=[_hit(h, ans.question) for h in ans.hits],
         timings_ms={k: round(v, 2) for k, v in ans.timings_ms.items()},
@@ -136,6 +137,7 @@ def ask_stream(body: SearchRequest, user: UserRecord = Depends(_ask_limit),
                     )
                     yield _sse("done", {"query_id": qid, "answer": ev["answer"],
                                         "grounded": ev["grounded"], "timings_ms": timings,
+                                        "confidence": ev["confidence"],
                                         "citations": [c.model_dump() for c in citations]})
         except LLMError as exc:
             yield _sse("error", {"detail": str(exc)})

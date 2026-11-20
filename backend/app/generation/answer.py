@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from app.core.knowledge_base import KnowledgeBase, SearchOptions
 from app.generation.citations import Citation, resolve_citations, strip_invalid_markers
+from app.generation.confidence import answer_confidence
 from app.generation.extractive import NOT_FOUND
 from app.generation.prompt import SYSTEM_PROMPT, build_user_prompt
 from app.generation.providers import LLMProvider
@@ -22,6 +23,7 @@ class Answer:
     hits: list[SearchHit]
     timings_ms: dict[str, float] = field(default_factory=dict)
     grounded: bool = True
+    confidence: float = 0.0
 
 
 class AnswerEngine:
@@ -51,6 +53,7 @@ class AnswerEngine:
             hits=hits,
             timings_ms={"retrieval": (t1 - t0) * 1000, "generation": (t2 - t1) * 1000},
             grounded=bool(citations),
+            confidence=answer_confidence(question, text, hits, citations),
         )
 
     def stream(self, question: str, options: SearchOptions | None = None) -> Iterator[dict]:
@@ -62,6 +65,7 @@ class AnswerEngine:
         if not hits:
             yield {"type": "token", "text": NOT_FOUND}
             yield {"type": "done", "answer": NOT_FOUND, "citations": [], "grounded": False,
+                   "confidence": 0.0,
                    "timings_ms": {"retrieval": (t1 - t0) * 1000, "generation": 0.0}}
             return
         user = build_user_prompt(question, hits, self.max_context_chars)
@@ -74,4 +78,5 @@ class AnswerEngine:
         citations = resolve_citations(text, hits)
         yield {"type": "done", "answer": text, "citations": citations,
                "grounded": bool(citations),
+               "confidence": answer_confidence(question, text, hits, citations),
                "timings_ms": {"retrieval": (t1 - t0) * 1000, "generation": (t2 - t1) * 1000}}

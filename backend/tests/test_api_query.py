@@ -107,3 +107,9 @@ def test_search_returns_highlight_spans(client, loaded):
     assert hit["highlights"]
     s, e = hit["highlights"][0]
     assert hit["text"][s:e].lower() == "fusion"
+
+
+def test_ask_reports_confidence(client, loaded):
+    body = client.post("/ask", headers=loaded,
+                       json={"query": "What does reciprocal rank fusion merge?"}).json()
+    assert 0.5 <= body["confidence"] <= 1.0
