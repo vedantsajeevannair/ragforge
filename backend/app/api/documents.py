@@ -75,6 +75,11 @@ def _index_upload(state: AppState, user: UserRecord, data: bytes, filename: str,
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     if not result.chunks:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "no extractable text found")
+    if len(result.chunks) > state.settings.max_chunks_per_document:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                            f"document produced {len(result.chunks)} chunks; the limit is "
+                            f"{state.settings.max_chunks_per_document}. Split the file or "
+                            "raise RAGFORGE_MAX_CHUNKS_PER_DOCUMENT.")
     state.kb.add(result, collection=collection,
                  extra={"owner_id": user.id, "visibility": visibility})
     state.files.save(result.document.doc_id, data)

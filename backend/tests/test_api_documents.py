@@ -163,3 +163,20 @@ def test_admin_deletes_whole_collection(client, admin_headers, user_headers):
     hits = client.post("/search", headers=admin_headers, json={"query": "apples bananas"})
     assert {h["metadata"]["collection"] for h in hits.json()["hits"]} <= {"veg"}
     assert client.delete("/documents/collections/fruit", headers=admin_headers).status_code == 404
+
+
+def test_chunk_limit_rejects_huge_documents():
+    from fastapi.testclient import TestClient
+
+    from app.config import Settings
+    from app.main import create_app
+
+    settings = Settings(jwt_secret="m" * 40, embedding_dim=64, chunk_size=50, chunk_overlap=0,
+                        max_chunks_per_document=3)
+    with TestClient(create_app(settings, in_memory=True)) as c:
+        r = c.post("/auth/register", json={"username": "ann", "password": "password123"})
+        h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        text = " ".join(f"Line {i} of a long file." for i in range(40)).encode()
+        resp = c.post("/documents", headers=h, files={"file": ("big.txt", text)})
+        assert resp.status_code == 413 and "limit is 3" in resp.json()["detail"]
+        assert c.get("/documents", headers=h).json() == []
