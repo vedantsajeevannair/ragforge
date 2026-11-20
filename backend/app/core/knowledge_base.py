@@ -61,7 +61,8 @@ class KnowledgeBase:
             [self._retrievers["dense"], self._retrievers["bm25"]], weights=[dense_weight, 1.0]
         )
 
-    def add(self, result: IngestResult, collection: str = "default") -> list[StoredChunk]:
+    def add(self, result: IngestResult, collection: str = "default",
+            extra: dict | None = None) -> list[StoredChunk]:
         doc = result.document
         stored = [
             StoredChunk(
@@ -69,7 +70,7 @@ class KnowledgeBase:
                 doc_id=c.doc_id,
                 text=c.text,
                 metadata={**c.metadata, "source": doc.source, "collection": collection,
-                          "start": c.start, "end": c.end},
+                          "start": c.start, "end": c.end, **(extra or {})},
             )
             for c in result.chunks
         ]

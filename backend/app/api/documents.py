@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -27,6 +29,7 @@ async def upload(
     file: UploadFile = File(...),
     collection: str = Form("default", min_length=1, max_length=60, pattern=r"^[\w.-]+$"),
     strategy: str | None = Form(None),
+    visibility: Literal["shared", "private"] = Form("shared"),
     user: UserRecord = Depends(current_user),
     state: AppState = Depends(get_state),
 ) -> DocumentOut:
@@ -51,13 +54,14 @@ async def upload(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     if not result.chunks:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "no extractable text found")
-    state.kb.add(result, collection=collection)
+    state.kb.add(result, collection=collection,
+                 extra={"owner_id": user.id, "visibility": visibility})
     state.files.save(result.document.doc_id, data)
     rec = DocumentRecord(
         doc_id=result.document.doc_id, filename=filename, collection=collection,
         doc_type=result.document.metadata.get("type"), size_bytes=len(data),
         chunk_count=len(result.chunks), title=result.document.metadata.get("title"),
-        owner_id=user.id, created_at="",
+        owner_id=user.id, created_at="", visibility=visibility,
     )
     state.documents.upsert(rec)
     return _out(state.documents.get(rec.doc_id))
@@ -133,7 +137,8 @@ def reindex(_: UserRecord = Depends(require_admin),
             continue
         result = ingest_bytes(data, rec.filename, state.settings.chunk_size,
                               state.settings.chunk_overlap)
-        state.kb.add(result, collection=rec.collection)
+        state.kb.add(result, collection=rec.collection,
+                     extra={"owner_id": rec.owner_id, "visibility": rec.visibility})
         rec.chunk_count = len(result.chunks)
         state.documents.upsert(rec)
         done += 1

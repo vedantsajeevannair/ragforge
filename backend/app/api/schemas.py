@@ -33,6 +33,8 @@ class DocumentOut(BaseModel):
     chunk_count: int
     title: str | None
     created_at: str
+    visibility: str
+    owner_id: int | None
 
 
 class SearchRequest(BaseModel):
