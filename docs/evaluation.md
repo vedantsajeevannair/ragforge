@@ -84,6 +84,22 @@ Not kept as the default. Repeating header words in every chunk of a file lowers 
 makes all chunks from the same file look alike to BM25. Available with
 `RAGFORGE_CONTEXTUAL_HEADERS=true` or `--headers` in the CLI for corpora with very short sections.
 
+### Text processing fixes (found while testing the UI)
+
+Asking "How does reciprocal rank fusion combine rankings?" returned two unrelated sentences.
+Three causes: "rankings" stemmed to "ranking" instead of "rank"; question words ("how",
+"does") counted as matches; and "nDCG discounts..." was glued to the previous sentence
+because sentences were only split before capital letters.
+
+| | hybrid hit@1 | citation precision | phrase recall |
+|---|---:|---:|---:|
+| before | 0.875 | 0.842 | 0.806 |
+| after | 0.900 | 0.829 | 0.806 |
+
+Retrieval improved and the example answer lost both unrelated sentences; citation precision
+dipped slightly across the set. Kept, because the remaining off-topic citations are
+vocabulary gaps (listed by `--failures`) that the old behaviour only hid by chance.
+
 ## Reproducing
 
 ```bash
