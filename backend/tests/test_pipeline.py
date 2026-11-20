@@ -18,7 +18,8 @@ def test_ingest_pdf_assigns_pages(fixtures_dir):
 
 
 def test_ingest_respects_explicit_strategy():
-    result = ingest_bytes(b"a" * 50, "x.txt", chunk_size=20, chunk_overlap=0, strategy="fixed")
+    text = "".join(chr(97 + i % 26) for i in range(50)).encode()
+    result = ingest_bytes(text, "x.txt", chunk_size=20, chunk_overlap=0, strategy="fixed")
     assert len(result.chunks) == 3
 
 

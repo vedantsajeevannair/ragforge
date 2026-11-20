@@ -88,7 +88,7 @@ def test_reindex_uses_new_chunk_size(tmp_path):
     from app.config import Settings
     from app.main import create_app
 
-    text = ("Sentence about retrieval. " * 60).encode()
+    text = " ".join(f"Sentence {i} about retrieval." for i in range(60)).encode()
     base = dict(data_dir=tmp_path, jwt_secret="r" * 40, embedding_dim=64, chunk_overlap=0)
     with TestClient(create_app(Settings(**base, chunk_size=1000))) as c:
         token = c.post("/auth/register", json={"username": "ann", "password": "password123"})
