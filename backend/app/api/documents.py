@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from app.api.deps import current_user, get_state
 from app.api.schemas import DocumentOut, HitOut
 from app.api.state import AppState
+from app.core.files import safe_filename
 from app.db.repositories import DocumentRecord, UserRecord
 from app.ingestion.loaders import UnsupportedFileType, supported_extensions
 from app.ingestion.pipeline import ingest_bytes
@@ -33,7 +34,7 @@ async def upload(
                             f"file exceeds {state.settings.max_upload_mb} MB")
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "file is empty")
-    filename = file.filename or "upload.txt"
+    filename = safe_filename(file.filename or "upload.txt")
     try:
         result = ingest_bytes(data, filename, state.settings.chunk_size,
                               state.settings.chunk_overlap, strategy)
@@ -45,6 +46,7 @@ async def upload(
     if not result.chunks:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "no extractable text found")
     state.kb.add(result, collection=collection)
+    state.files.save(result.document.doc_id, data)
     rec = DocumentRecord(
         doc_id=result.document.doc_id, filename=filename, collection=collection,
         doc_type=result.document.metadata.get("type"), size_bytes=len(data),
@@ -91,3 +93,4 @@ def delete_document(doc_id: str, user: UserRecord = Depends(current_user),
         raise HTTPException(status.HTTP_403_FORBIDDEN, "only the owner or an admin can delete")
     state.kb.delete(doc_id)
     state.documents.delete(doc_id)
+    state.files.delete(doc_id)

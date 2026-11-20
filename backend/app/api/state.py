@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from app.auth.secret import resolve_jwt_secret
 from app.config import Settings
+from app.core.files import FileStore
 from app.core.knowledge_base import KnowledgeBase
 from app.db.database import Database
 from app.db.repositories import DocumentRepository, QueryRepository, UserRepository
@@ -24,6 +25,7 @@ class AppState:
     users: UserRepository
     queries: QueryRepository
     kb: KnowledgeBase
+    files: FileStore
     engine: AnswerEngine
 
 
@@ -35,9 +37,11 @@ def build_state(settings: Settings, in_memory: bool = False) -> AppState:
     if in_memory:
         db = Database(":memory:")
         store = InMemoryVectorStore(embedder.dim)
+        files = FileStore(None)
     else:
         db = Database(settings.data_dir / "ragforge.db")
         store = PersistentVectorStore(embedder.dim, settings.data_dir / "index")
+        files = FileStore(settings.data_dir / "files")
     kb = KnowledgeBase(embedder, store)
     return AppState(
         settings=settings,
@@ -46,5 +50,6 @@ def build_state(settings: Settings, in_memory: bool = False) -> AppState:
         users=UserRepository(db),
         queries=QueryRepository(db),
         kb=kb,
+        files=files,
         engine=AnswerEngine(kb, build_llm(settings)),
     )

@@ -52,3 +52,8 @@ def test_delete_permissions(client, admin_headers, user_headers):
 def test_owner_can_delete_own_document(client, user_headers):
     doc_id = _upload(client, user_headers).json()["doc_id"]
     assert client.delete(f"/documents/{doc_id}", headers=user_headers).status_code == 204
+
+
+def test_upload_sanitises_filename(client, admin_headers):
+    resp = _upload(client, admin_headers, name="../../secret notes.md")
+    assert resp.json()["filename"] == "secret_notes.md"
