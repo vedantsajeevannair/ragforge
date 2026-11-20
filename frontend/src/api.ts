@@ -119,6 +119,7 @@ export type StreamEvent =
         query_id: number;
         answer: string;
         grounded: boolean;
+        confidence: number;
         citations: Citation[];
         timings_ms: Record<string, number>;
       };

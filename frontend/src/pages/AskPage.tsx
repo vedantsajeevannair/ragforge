@@ -23,6 +23,7 @@ interface Result {
   grounded: boolean | null;
   queryId: number | null;
   timings: Record<string, number>;
+  confidence: number | null;
 }
 
 function withSources(answer: string, citations: Citation[]): string {
@@ -31,7 +32,11 @@ function withSources(answer: string, citations: Citation[]): string {
 }
 
 const EMPTY: Result = { answer: "", citations: [], hits: [], grounded: null, queryId: null,
-  timings: {} };
+  timings: {}, confidence: null };
+
+function confidenceLabel(c: number): string {
+  return c >= 0.7 ? "high" : c >= 0.4 ? "medium" : "low";
+}
 
 export function AskPage() {
   const [question, setQuestion] = useState("");
@@ -78,7 +83,7 @@ export function AskPage() {
         else if (ev.event === "done")
           setResult((r) => ({ ...r, answer: ev.data.answer, citations: ev.data.citations,
             grounded: ev.data.grounded, queryId: ev.data.query_id,
-            timings: ev.data.timings_ms }));
+            timings: ev.data.timings_ms, confidence: ev.data.confidence }));
         else if (ev.event === "error") setError(ev.data.detail);
       }, controller.signal);
     } catch (err) {
@@ -150,6 +155,11 @@ export function AskPage() {
             {result.grounded === null ? <span className="muted">Generating…</span> : (
               <span className={`badge ${result.grounded ? "ok" : "warn"}`}>
                 {result.grounded ? "Grounded in sources" : "Not grounded"}
+              </span>
+            )}
+            {result.confidence !== null && result.grounded && (
+              <span className="badge" title="Heuristic: question coverage and cited sentences">
+                Confidence: {confidenceLabel(result.confidence)}
               </span>
             )}
             {result.timings.retrieval !== undefined && (

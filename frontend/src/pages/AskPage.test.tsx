@@ -8,7 +8,7 @@ function sse(answer: string, id: number) {
   const body =
     `event: sources\ndata: {"hits": []}\n\n` +
     `event: token\ndata: ${JSON.stringify({ text: answer })}\n\n` +
-    `event: done\ndata: ${JSON.stringify({ query_id: id, answer, grounded: true,
+    `event: done\ndata: ${JSON.stringify({ query_id: id, answer, grounded: true, confidence: 0.8,
       citations: [], timings_ms: { retrieval: 2, generation: 1 } })}\n\n`;
   return new Response(body, { headers: { "Content-Type": "text/event-stream" } });
 }
@@ -25,6 +25,7 @@ it("streams an answer and sends earlier questions on follow-ups", async () => {
   await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   expect(await screen.findByText("First.")).toBeInTheDocument();
   expect(screen.getByText("Grounded in sources")).toBeInTheDocument();
+  expect(screen.getByText("Confidence: high")).toBeInTheDocument();
 
   await userEvent.type(screen.getByLabelText("Question"), "What about its parameters?");
   await userEvent.click(screen.getByRole("button", { name: "Ask" }));
