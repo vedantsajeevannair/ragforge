@@ -29,3 +29,40 @@ def test_char_ngrams_give_partial_credit_for_morphology():
 
 def test_empty_text_gives_zero_vector():
     assert not HashingEmbedder(dim=32).embed_one("").any()
+
+
+import httpx  # noqa: E402
+import pytest  # noqa: E402
+
+from app.embeddings.http import HTTPEmbedder  # noqa: E402
+
+
+def _mock_client(dim, calls):
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json
+        body = json.loads(request.content)
+        calls.append(len(body["input"]))
+        data = [{"index": i, "embedding": [float(i + 1)] * dim}
+                for i in range(len(body["input"]))][::-1]
+        return httpx.Response(200, json={"data": data})
+    return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_http_embedder_batches_and_orders_results():
+    calls = []
+    e = HTTPEmbedder("http://x/v1", "m", dim=4, batch_size=2, client=_mock_client(4, calls))
+    out = e.embed(["a", "b", "c"])
+    assert calls == [2, 1]
+    assert out.shape == (3, 4)
+    assert np.allclose(np.linalg.norm(out, axis=1), 1.0)
+
+
+def test_http_embedder_rejects_wrong_dim():
+    e = HTTPEmbedder("http://x/v1", "m", dim=8, client=_mock_client(4, []))
+    with pytest.raises(ValueError):
+        e.embed(["a"])
+
+
+def test_http_embedder_empty_input():
+    e = HTTPEmbedder("http://x/v1", "m", dim=8, client=_mock_client(8, []))
+    assert e.embed([]).shape == (0, 8)
