@@ -30,8 +30,9 @@ CONFIGS = [
 
 
 def build_kb(corpus: Path, dim: int, chunk_size: int, overlap: int,
-             headers: bool = False) -> KnowledgeBase:
-    kb = KnowledgeBase(HashingEmbedder(dim), InMemoryVectorStore(dim), contextual_headers=headers)
+             headers: bool = False, dense_weight: float = 0.5) -> KnowledgeBase:
+    kb = KnowledgeBase(HashingEmbedder(dim), InMemoryVectorStore(dim),
+                       contextual_headers=headers, dense_weight=dense_weight)
     exts = set(supported_extensions())
     for path in sorted(corpus.rglob("*")):
         if path.is_file() and path.suffix.lower() in exts:
@@ -62,7 +63,7 @@ def sweep(args) -> int:
     rows = []
     for size in SWEEP_SIZES:
         overlap = min(args.overlap, size // 4)
-        kb = build_kb(args.corpus, args.dim, size, overlap, args.headers)
+        kb = build_kb(args.corpus, args.dim, size, overlap, args.headers, args.dense_weight)
         report = evaluate_retrieval(kb, examples, SearchOptions(k=args.k))
         rows.append((f"size={size} chunks={kb.stats()['chunks']}", report.metrics))
     print(format_table(rows, ["hit@1", "hit@k", "mrr", "ndcg@k"]))
@@ -80,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", type=Path, help="also write the full report as JSON")
     parser.add_argument("--headers", action="store_true",
                         help="index chunks with file/section headers prepended")
+    parser.add_argument("--dense-weight", type=float, default=0.5,
+                        help="weight of dense ranking in hybrid fusion (BM25 = 1.0)")
     parser.add_argument("--sweep", action="store_true",
                         help="compare chunk sizes for the hybrid+rerank+expand pipeline")
     parser.add_argument("--failures", action="store_true",
@@ -88,7 +91,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.sweep:
         return sweep(args)
-    kb = build_kb(args.corpus, args.dim, args.chunk_size, args.overlap, args.headers)
+    kb = build_kb(args.corpus, args.dim, args.chunk_size, args.overlap, args.headers,
+                  args.dense_weight)
     examples = load_dataset(args.dataset)
     rows, full = [], []
     for base in CONFIGS:

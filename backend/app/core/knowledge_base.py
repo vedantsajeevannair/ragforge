@@ -41,7 +41,7 @@ def chunk_header(metadata: dict) -> str:
 
 class KnowledgeBase:
     def __init__(self, embedder: Embedder, store: VectorStore,
-                 contextual_headers: bool = False) -> None:
+                 contextual_headers: bool = False, dense_weight: float = 1.0) -> None:
         self.embedder = embedder
         self.store = store
         # Index each chunk together with its file/section header so short chunks keep
@@ -58,7 +58,7 @@ class KnowledgeBase:
             "bm25": LexicalRetriever(self.bm25),
         }
         self._retrievers["hybrid"] = HybridRetriever(
-            [self._retrievers["dense"], self._retrievers["bm25"]]
+            [self._retrievers["dense"], self._retrievers["bm25"]], weights=[dense_weight, 1.0]
         )
 
     def add(self, result: IngestResult, collection: str = "default") -> list[StoredChunk]:

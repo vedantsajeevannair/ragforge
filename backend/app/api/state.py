@@ -42,7 +42,8 @@ def build_state(settings: Settings, in_memory: bool = False) -> AppState:
         db = Database(settings.data_dir / "ragforge.db")
         store = PersistentVectorStore(embedder.dim, settings.data_dir / "index")
         files = FileStore(settings.data_dir / "files")
-    kb = KnowledgeBase(embedder, store, settings.contextual_headers)
+    kb = KnowledgeBase(embedder, store, settings.contextual_headers,
+                       settings.effective_dense_weight)
     return AppState(
         settings=settings,
         db=db,
