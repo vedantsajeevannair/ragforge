@@ -36,6 +36,21 @@ class BM25Index:
             self._lengths.append(sum(tf.values()))
             self._df.update(tf.keys())
 
+    def remove_document(self, doc_id: str) -> int:
+        """Drop a document's chunks and update document frequencies in place."""
+        keep = [i for i, c in enumerate(self._chunks) if c.doc_id != doc_id]
+        removed = len(self._chunks) - len(keep)
+        if not removed:
+            return 0
+        for i, chunk in enumerate(self._chunks):
+            if chunk.doc_id == doc_id:
+                self._df.subtract(self._tfs[i].keys())
+        self._df += Counter()  # drop zero counts
+        self._chunks = [self._chunks[i] for i in keep]
+        self._tfs = [self._tfs[i] for i in keep]
+        self._lengths = [self._lengths[i] for i in keep]
+        return removed
+
     def rebuild(self, chunks: list[StoredChunk]) -> None:
         self.__init__(self.k1, self.b, self.text_fn)
         self.add(chunks)

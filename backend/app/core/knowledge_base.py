@@ -80,7 +80,9 @@ class KnowledgeBase:
         with self._lock:
             self.store.delete_document(doc.doc_id)
             self.store.add(stored, vectors)
-            self.bm25.rebuild(self.store.all_chunks())
+            # Incremental update: O(chunks of this document), not O(whole index).
+            self.bm25.remove_document(doc.doc_id)
+            self.bm25.add(stored)
         return stored
 
     def _index_text(self, chunk: StoredChunk) -> str:
@@ -92,8 +94,7 @@ class KnowledgeBase:
     def delete(self, doc_id: str) -> int:
         with self._lock:
             removed = self.store.delete_document(doc_id)
-            if removed:
-                self.bm25.rebuild(self.store.all_chunks())
+            self.bm25.remove_document(doc_id)
             return removed
 
     def search(self, query: str, options: SearchOptions | None = None) -> list[SearchHit]:

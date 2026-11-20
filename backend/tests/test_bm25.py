@@ -45,3 +45,17 @@ def test_bm25_text_fn_indexes_extra_context():
     idx.add([StoredChunk("1", "d", "uses k1 and b", {"section": "BM25 parameters"}),
              StoredChunk("2", "d", "unrelated words")])
     assert idx.search("bm25", k=1)[0].chunk.chunk_id == "1"
+
+
+def test_remove_document_matches_full_rebuild():
+    chunks = [StoredChunk("a:0", "a", "alpha beta"), StoredChunk("b:0", "b", "beta gamma"),
+              StoredChunk("b:1", "b", "gamma delta"), StoredChunk("c:0", "c", "alpha delta")]
+    incremental = BM25Index()
+    incremental.add(chunks)
+    assert incremental.remove_document("b") == 2
+    rebuilt = BM25Index()
+    rebuilt.add([c for c in chunks if c.doc_id != "b"])
+    assert incremental._df == rebuilt._df
+    assert incremental.avg_length == rebuilt.avg_length
+    assert incremental.score("alpha delta") == rebuilt.score("alpha delta")
+    assert incremental.remove_document("missing") == 0
