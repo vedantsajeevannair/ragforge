@@ -129,6 +129,25 @@ def load_docx(data: bytes, source: str) -> Document:
     return Document(text="\n\n".join(lines), source=source, metadata={"type": "markdown"})
 
 
+def load_csv(data: bytes, source: str) -> Document:
+    """Render each row as 'column: value' lines so rows are retrievable on their own."""
+    text = _decode(data)
+    try:
+        dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;\t|")
+    except csv.Error:
+        dialect = csv.excel
+    reader = csv.DictReader(io.StringIO(text), dialect=dialect)
+    rows = []
+    for i, row in enumerate(reader, start=1):
+        fields = [f"{k.strip()}: {(v or '').strip()}" for k, v in row.items()
+                  if k and (v or "").strip()]
+        if fields:
+            rows.append(f"Row {i}. " + "; ".join(fields) + ".")
+    return Document(text="\n\n".join(rows), source=source,
+                    metadata={"type": "csv", "rows": len(rows),
+                              "columns": list(reader.fieldnames or [])})
+
+
 _LOADERS: dict[str, Loader] = {
     ".txt": load_text,
     ".md": load_markdown,
@@ -137,6 +156,8 @@ _LOADERS: dict[str, Loader] = {
     ".htm": load_html,
     ".pdf": load_pdf,
     ".docx": load_docx,
+    ".csv": load_csv,
+    ".tsv": load_csv,
 }
 
 

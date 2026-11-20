@@ -50,3 +50,18 @@ def test_docx_loader_maps_headings(fixtures_dir):
 def test_docx_loader_rejects_non_zip():
     with pytest.raises(ValueError, match="docx"):
         load_bytes(b"not a zip", "x.docx")
+
+
+def test_csv_loader_renders_rows():
+    data = b"name,role,city\nAsha,Engineer,Pune\nRavi,,Mumbai\n"
+    doc = load_bytes(data, "team.csv")
+    assert doc.text.split("\n\n") == [
+        "Row 1. name: Asha; role: Engineer; city: Pune.",
+        "Row 2. name: Ravi; city: Mumbai.",
+    ]
+    assert doc.metadata["columns"] == ["name", "role", "city"]
+
+
+def test_tsv_loader_sniffs_tabs():
+    doc = load_bytes(b"a\tb\n1\t2\n", "x.tsv")
+    assert doc.text == "Row 1. a: 1; b: 2."
