@@ -73,6 +73,12 @@ export const api = {
     form.append("visibility", visibility);
     return request<DocumentInfo>("/documents", { method: "POST", body: form });
   },
+  updateDocument: (docId: string,
+    changes: Partial<Pick<DocumentInfo, "collection" | "visibility" | "title">>) =>
+    request<DocumentInfo>(`/documents/${docId}`, {
+      method: "PATCH",
+      body: JSON.stringify(changes),
+    }),
   deleteDocument: (docId: string) =>
     request<void>(`/documents/${docId}`, { method: "DELETE" }),
   chunks: (docId: string) => request<Hit[]>(`/documents/${docId}/chunks`),

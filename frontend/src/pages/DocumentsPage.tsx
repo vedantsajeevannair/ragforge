@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
+import { EditDocument } from "../components/EditDocument";
 import { UploadPanel } from "../components/UploadPanel";
 import { formatBytes, formatDate } from "../format";
 import type { DocumentInfo, Hit } from "../types";
@@ -10,6 +11,7 @@ export function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ doc: DocumentInfo; chunks: Hit[] } | null>(null);
+  const [editing, setEditing] = useState<DocumentInfo | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,6 +54,13 @@ export function DocumentsPage() {
       <UploadPanel onUploaded={(doc) =>
         setDocs((d) => [doc, ...d.filter((x) => x.doc_id !== doc.doc_id)])} />
       {error && <p className="error" role="alert">{error}</p>}
+      {editing && (
+        <EditDocument doc={editing} onCancel={() => setEditing(null)}
+          onSaved={(doc) => {
+            setDocs((list) => list.map((x) => (x.doc_id === doc.doc_id ? doc : x)));
+            setEditing(null);
+          }} />
+      )}
       <div className="panel">
         <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
           <input type="text" placeholder="Filter documents" aria-label="Filter documents"
@@ -82,6 +91,10 @@ export function DocumentsPage() {
                   <td className="num">{formatBytes(d.size_bytes)}</td>
                   <td>{formatDate(d.created_at)}</td>
                   <td className="row">
+                    <button type="button" className="btn ghost"
+                      aria-label={`Edit ${d.filename}`} onClick={() => setEditing(d)}>
+                      Edit
+                    </button>
                     <button type="button" className="btn ghost"
                       aria-label={`Download ${d.filename}`}
                       onClick={() => api.download(d.doc_id, d.filename)
