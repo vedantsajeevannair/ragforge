@@ -37,3 +37,22 @@ def test_user_create_and_lookup(db):
     assert users.count() == 1
     with pytest.raises(sqlite3.IntegrityError):
         users.create("alice", "x")
+
+
+from app.db.repositories import QueryRepository  # noqa: E402
+
+
+def test_query_log_history_feedback_summary(db):
+    uid = UserRepository(db).create("u", "h").id
+    other = UserRepository(db).create("v", "h").id
+    q = QueryRepository(db)
+    first = q.log(uid, "q1", "a1", True, "hybrid", "[]", 10.0, 20.0)
+    q.log(uid, "q2", "a2", False, "bm25", "[]", 30.0, 0.0)
+    assert [r.question for r in q.for_user(uid)] == ["q2", "q1"]
+    assert q.for_user(uid)[1].grounded is True
+    assert q.set_feedback(first, uid, 1)
+    assert not q.set_feedback(first, other, -1)
+    with pytest.raises(ValueError):
+        q.set_feedback(first, uid, 5)
+    s = q.summary()
+    assert s["total"] == 2 and s["grounded_rate"] == 0.5 and s["up"] == 1
